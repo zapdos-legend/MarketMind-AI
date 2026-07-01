@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}MarketMind AI | Generate Marketing Strategy{% endblock %}
+
+{% block content %}
+<section class="py-4 py-lg-5">
+    <div class="row align-items-center g-5">
+        <div class="col-lg-6">
+            <span class="badge rounded-pill text-bg-primary mb-3 px-3 py-2">AI-powered marketing plans</span>
+            <h1 class="display-5 fw-bold lh-1 mb-4">Build a focused go-to-market strategy in minutes.</h1>
+            <p class="lead text-muted mb-4">
+                MarketMind AI turns your business idea, audience insights, goals, and budget into a practical
+                marketing strategy with channel recommendations, competitive positioning, and next steps.
+            </p>
+            <div class="d-flex flex-column flex-sm-row gap-3 mb-4">
+                <a class="btn btn-primary btn-lg px-4" href="#strategy-form">Start your strategy</a>
+                <a class="btn btn-outline-secondary btn-lg px-4" href="#how-it-works">How it works</a>
+            </div>
+            <div class="row g-3" id="how-it-works">
+                <div class="col-sm-4">
+                    <div class="p-3 bg-white rounded-3 shadow-sm h-100">
+                        <div class="fw-bold">1. Share context</div>
+                        <small class="text-muted">Describe your offer, market, and constraints.</small>
+                    </div>
+                </div>
+                <div class="col-sm-4">
+                    <div class="p-3 bg-white rounded-3 shadow-sm h-100">
+                        <div class="fw-bold">2. Analyze fit</div>
+                        <small class="text-muted">Map audience needs to channels and messaging.</small>
+                    </div>
+                </div>
+                <div class="col-sm-4">
+                    <div class="p-3 bg-white rounded-3 shadow-sm h-100">
+                        <div class="fw-bold">3. Execute</div>
+                        <small class="text-muted">Leave with a clear, prioritized action plan.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-lg" id="strategy-form">
+                <div class="card-body p-4 p-lg-5">
+                    <div class="mb-4">
+                        <h2 class="h3 fw-bold mb-2">Generate your strategy</h2>
+                        <p class="text-muted mb-0">Complete the brief below. Only the topic is required.</p>
+                    </div>
+
+                    <form action="{{ url_for('analyze') }}" method="post">
+                        <div class="mb-3">
+                            <label for="topic" class="form-label fw-semibold">Topic <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control form-control-lg" id="topic" name="topic" placeholder="e.g., Launching a sustainable skincare line" required>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="audience" class="form-label fw-semibold">Audience</label>
+                                <input type="text" class="form-control" id="audience" name="audience" placeholder="e.g., Gen Z beauty buyers">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="goal" class="form-label fw-semibold">Goal</label>
+                                <input type="text" class="form-control" id="goal" name="goal" placeholder="e.g., Increase qualified leads">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="budget" class="form-label fw-semibold">Budget</label>
+                                <input type="text" class="form-control" id="budget" name="budget" placeholder="e.g., $5,000/month">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="timeline" class="form-label fw-semibold">Timeline</label>
+                                <input type="text" class="form-control" id="timeline" name="timeline" placeholder="e.g., 90 days">
+                            </div>
+                        </div>
+
+                        <div class="mb-3 mt-3">
+                            <label for="competitors" class="form-label fw-semibold">Competitors</label>
+                            <input type="text" class="form-control" id="competitors" name="competitors" placeholder="List key competitors or alternatives">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="channels" class="form-label fw-semibold">Channels</label>
+                            <input type="text" class="form-control" id="channels" name="channels" placeholder="e.g., SEO, email, TikTok, LinkedIn, paid search">
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="notes" class="form-label fw-semibold">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="4" placeholder="Add brand voice, constraints, offers, geographies, or any details the AI should consider."></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg w-100">Generate Strategy</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
