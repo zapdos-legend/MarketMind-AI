@@ -1,15 +1,16 @@
-"""AI analysis helpers for MarketMind-AI.
+"""AI content generation helpers for MarketMind-AI.
 
-The app calls ``analyze(prompt)`` with a ready-made marketing prompt. When an
-OpenAI API key is configured, this module can request an AI-generated strategy.
-Without a key, it returns a deterministic local strategy so the app remains
-useful in development and demos.
+The app calls ``analyze(prompt)`` with a ready-made marketing content prompt.
+When an OpenAI API key is configured, this module asks OpenAI to follow that
+prompt directly. Without a key, it returns deterministic local content so the
+app remains useful in development and demos.
 """
 
 from __future__ import annotations
 
 import json
 import os
+import re
 import urllib.error
 import urllib.request
 
@@ -17,6 +18,16 @@ import urllib.request
 OPENAI_API_URL = "https://api.openai.com/v1/responses"
 DEFAULT_MODEL = "gpt-4.1-mini"
 REQUEST_TIMEOUT_SECONDS = 30
+VISUAL_CONTENT_TYPES = {"Poster", "Banner", "Pamphlet"}
+SUPPORTED_CONTENT_TYPES = (
+    "Marketing Text",
+    "Article",
+    "Social Media Caption",
+    "Poster",
+    "Banner",
+    "Pamphlet",
+    "AI Marketing Pack",
+)
 
 
 def _shorten(text: str, limit: int = 260) -> str:
@@ -27,50 +38,147 @@ def _shorten(text: str, limit: int = 260) -> str:
     return f"{cleaned[: limit - 3].rstrip()}..."
 
 
+def _extract_content_type(prompt: str) -> str:
+    """Infer the requested content type from a prompt_builder.py prompt."""
+    first_line = prompt.splitlines()[0] if prompt.splitlines() else ""
+    match = re.match(r"Create (.+?) for:", first_line)
+    if match and match.group(1) in SUPPORTED_CONTENT_TYPES:
+        return match.group(1)
+    return "Marketing Text"
+
+
+def _extract_topic(prompt: str) -> str:
+    """Infer the topic from the first line of a prompt_builder.py prompt."""
+    first_line = prompt.splitlines()[0] if prompt.splitlines() else ""
+    match = re.match(r"Create .+? for: (.+?)\.\s*$", first_line)
+    if match:
+        return match.group(1).strip()
+    return _shorten(prompt) or "the submitted marketing topic"
+
+
+def _extract_detail(prompt: str, label: str) -> str:
+    """Return a user-provided detail from the prompt, if present."""
+    prefix = f"- {label}:"
+    for line in prompt.splitlines():
+        if line.startswith(prefix):
+            return line.removeprefix(prefix).strip()
+    return ""
+
+
+def _fallback_context(prompt: str) -> dict[str, str]:
+    """Build reusable context values for local content generation."""
+    topic = _extract_topic(prompt)
+    business_name = _extract_detail(prompt, "Business name")
+    product_service = _extract_detail(prompt, "Product/service")
+    audience = _extract_detail(prompt, "Target audience")
+    platform = _extract_detail(prompt, "Platform/channel")
+    tone = _extract_detail(prompt, "Tone")
+    offer = _extract_detail(prompt, "Offer/promotion")
+
+    brand = business_name or product_service or topic
+    audience_text = f" for {audience}" if audience else ""
+    offer_text = f" {offer}" if offer else ""
+    platform_text = f" on {platform}" if platform else ""
+    tone_text = f" Use a {tone} tone." if tone else ""
+
+    return {
+        "topic": topic,
+        "brand": brand,
+        "audience_text": audience_text,
+        "offer_text": offer_text,
+        "platform_text": platform_text,
+        "tone_text": tone_text,
+    }
+
+
+def _visual_guidance(content_type: str) -> str:
+    """Return visual/layout guidance for copy-only visual formats."""
+    if content_type == "Poster":
+        return "Place the headline at the top, one supporting benefit in the center, and the CTA in a bold bottom block. Use one hero visual area and high-contrast colors."
+    if content_type == "Banner":
+        return "Use a left-aligned headline, a short benefit line, and a right-aligned CTA button. Keep generous whitespace for quick scanning."
+    return "Organize copy into front, inside, and back panels with clear section breaks, concise bullets, and a repeated CTA on the back panel."
+
+
 def _local_fallback(prompt: str, reason: str | None = None) -> str:
-    """Build a deterministic, practical marketing strategy without an API call."""
-    prompt_preview = _shorten(prompt) or "the submitted business topic"
+    """Build deterministic marketing content without overriding the prompt."""
+    content_type = _extract_content_type(prompt)
+    context = _fallback_context(prompt)
+    brand = context["brand"]
+    topic = context["topic"]
+    audience_text = context["audience_text"]
+    offer_text = context["offer_text"]
+    platform_text = context["platform_text"]
+    tone_text = context["tone_text"]
     note = f"\n\nNote: Using local fallback because {reason}." if reason else ""
 
-    return f"""Marketing Strategy
+    if content_type == "Article":
+        return f"""# {topic}: A Smarter Way to Get Results
 
-Summary of the opportunity
-The request focuses on: {prompt_preview}
-This is an opportunity to turn a clear customer problem into a simple campaign
-that explains who the offer helps, why it is different, and what action the
-audience should take next.
+## Introduction
+{brand} helps make {topic} easier to understand, choose, and act on{audience_text}.{tone_text}
 
-Positioning and key message
-Position the offer as a practical, low-friction solution for the target audience.
-Use a message like: "Get the outcome you want faster, with less guesswork and a
-clear next step." Keep the language specific, benefit-led, and easy to repeat.
+## Why it matters
+Customers want clear benefits, proof, and a simple next step. Focus the message on the outcome they care about most and remove friction from the decision.
 
-Channels to prioritize
-1. Search-friendly content: Publish helpful pages, guides, or posts that answer
-   common buyer questions and build trust over time.
-2. Social proof channels: Share testimonials, short case studies, demos, and
-   before-and-after examples where the audience already spends time.
-3. Email follow-up: Capture interested visitors and send a short nurture sequence
-   with education, proof, and a clear call to action.
+## What to do next
+Use concise copy, helpful examples, and a direct CTA so readers know exactly how to move forward.
 
-Actionable campaign ideas
-1. Create a beginner-friendly landing page with one primary call to action.
-2. Publish three educational posts that address the audience's biggest concerns.
-3. Launch a small test campaign around one offer, one audience, and one channel.
-4. Collect customer questions and turn the best answers into social content.
-5. Add a simple lead magnet, checklist, or consultation offer to capture demand.
+## CTA
+Explore {brand} today{offer_text} and take the next step with confidence.{note}"""
 
-Success metrics to track
-- Conversion rate from landing page visits to leads or purchases.
-- Cost per lead or cost per acquisition for paid tests.
-- Email sign-up rate and email reply/click rate.
-- Engagement on educational content and social proof posts.
-- Number of qualified conversations created each week.
+    if content_type == "Social Media Caption":
+        return f"""Hook: Ready to make {topic} simpler?
 
-Risks, assumptions, and next steps
-The main risk is trying too many channels before the core message is proven.
-Start with one audience segment, test one clear promise, measure results weekly,
-and improve the offer based on real customer feedback.{note}"""
+{brand} gives you a clearer way to move from interest to action{audience_text}{platform_text}. Focus on the outcome, skip the guesswork, and take the next step today.{tone_text}
+
+CTA: Learn more and get started{offer_text}.
+
+Hashtags: #Marketing #BrandGrowth #SmallBusiness #ContentMarketing #GetStarted{note}"""
+
+    if content_type in VISUAL_CONTENT_TYPES:
+        if content_type == "Pamphlet":
+            body = f"""Front panel: {brand}\nHeadline: Make {topic} easier\nSubcopy: Clear benefits, practical details, and a simple next step{audience_text}.\n\nInside panel 1: Why choose this\n- Benefit-led message focused on the customer's goal\n- Simple explanation of what is offered\n- Proof points or details that build trust\n\nInside panel 2: Offer\nHighlight:{offer_text or ' a clear reason to act now'}\n\nBack panel CTA: Contact {brand} to learn more and get started."""
+        else:
+            body = f"""Headline: Make {topic} easier\nSupporting copy: {brand} helps you get clear, practical results{audience_text}.\nCTA: Get started{offer_text}."""
+
+        return f"""{content_type} Copy
+{body}
+
+Layout / Visual Direction
+{_visual_guidance(content_type)} Do not generate an actual image.{note}"""
+
+    if content_type == "AI Marketing Pack":
+        return f"""Brief Strategy
+Position {brand} as a clear, practical solution for {topic}{audience_text}. Lead with the most immediate benefit, support it with proof, and drive every asset toward one CTA.
+
+Social Caption
+Ready to make {topic} easier? {brand} helps you move forward with clarity and confidence{platform_text}. Learn more today{offer_text}.
+
+Poster Copy
+Headline: Make {topic} easier
+Supporting copy: Clear benefits. Simple next step. Built for real results.
+CTA: Get started today.
+
+Banner Copy
+Headline: Better {topic} starts here
+Copy: Discover a simpler way forward.
+CTA: Learn more
+
+Hashtags
+#Marketing #BrandGrowth #ContentMarketing #SmallBusiness #CampaignReady
+
+CTA
+Choose {brand} and take the next step today{offer_text}.{note}"""
+
+    return f"""Headline
+Make {topic} easier with {brand}
+
+Body Copy
+Turn interest into action with clear, benefit-led messaging{audience_text}. {brand} helps people understand the value quickly, see why it matters, and know exactly what to do next.{tone_text}
+
+CTA
+Get started today{offer_text}.{note}"""
 
 
 def _call_openai(prompt: str, api_key: str) -> str:
@@ -79,8 +187,11 @@ def _call_openai(prompt: str, api_key: str) -> str:
         "model": os.environ.get("OPENAI_MODEL", DEFAULT_MODEL),
         "input": prompt,
         "instructions": (
-            "You are a helpful marketing strategist. Return a clear, practical, "
-            "beginner-friendly marketing plan with headings and actionable steps."
+            "You are a helpful AI marketing content generator. Follow the user's "
+            "prompt exactly, including requested content type, sections, tone, "
+            "platform, and visual-output rules. Do not replace the request with "
+            "a generic marketing strategy template. For poster, banner, and "
+            "pamphlet requests, provide copy plus layout or visual guidance only."
         ),
     }
 
@@ -111,7 +222,7 @@ def _call_openai(prompt: str, api_key: str) -> str:
 
 
 def analyze(prompt: str) -> str:
-    """Analyze a marketing prompt using OpenAI when available, otherwise locally."""
+    """Generate marketing content using OpenAI when available, otherwise locally."""
     if not isinstance(prompt, str):
         return _local_fallback(str(prompt), "the prompt was not provided as text")
 
