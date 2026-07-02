@@ -119,7 +119,7 @@ def _render_asset_html(content_type: str, result: str, form_data: dict[str, str]
     headline = _extract_label_value(result, ("Headline", "Title"), _first_non_empty_line(result))
     copy = _extract_label_value(
         result,
-        ("Supporting copy", "Subcopy", "Copy", "Body Copy"),
+        ("Supporting copy", "Subheadline", "Introduction", "Subcopy", "Copy", "Body Copy"),
         f"A polished campaign preview for {topic}.",
     )
     cta = _extract_label_value(
@@ -128,6 +128,8 @@ def _render_asset_html(content_type: str, result: str, form_data: dict[str, str]
         "Get started today",
     )
     bullets = _extract_bullets(result)
+    if any(item.lower().startswith(("✓ ", "✔ ")) for item in bullets):
+        bullets = [item[2:].strip() if item.lower().startswith(("✓ ", "✔ ")) else item for item in bullets]
 
     safe = {
         "content_type": escape(content_type),
