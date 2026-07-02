@@ -19,7 +19,18 @@ import prompt_builder
 
 LOGGER = logging.getLogger(__name__)
 MAX_INPUT_LENGTH = int(os.environ.get("MAX_ANALYSIS_INPUT_LENGTH", "2000"))
-REQUIRED_FORM_FIELDS = ("topic",)
+FORM_FIELDS = (
+    "content_type",
+    "topic",
+    "business_name",
+    "product_service",
+    "audience",
+    "platform",
+    "tone",
+    "offer",
+    "notes",
+)
+REQUIRED_FORM_FIELDS = ("content_type", "topic")
 
 
 app = Flask(__name__)
@@ -50,11 +61,7 @@ def _clean_form_value(field_name: str) -> str:
 
 def _validate_analysis_request() -> tuple[dict[str, str], list[str]]:
     """Validate the analysis form and return sanitized data plus errors."""
-    cleaned_data = {
-        key: value.strip()
-        for key, value in request.form.items()
-        if isinstance(value, str) and value.strip()
-    }
+    cleaned_data = {field_name: _clean_form_value(field_name) for field_name in FORM_FIELDS}
     errors: list[str] = []
 
     for field_name in REQUIRED_FORM_FIELDS:
