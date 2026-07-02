@@ -1,30 +1,30 @@
 {% extends "base.html" %}
 
-{% block title %}Market Strategy Results | MarketMind AI{% endblock %}
+{% block title %}Marketing Content Results | MarketMind AI{% endblock %}
 
 {% block content %}
 <section class="mb-4 text-center text-lg-start">
-    <p class="text-uppercase text-primary fw-semibold small mb-2">Strategy generated</p>
-    <h1 class="display-6 fw-bold mb-3">Your MarketMind AI Strategy</h1>
+    <p class="text-uppercase text-primary fw-semibold small mb-2">Content generated</p>
+    <h1 class="display-6 fw-bold mb-3">Your AI Marketing Content</h1>
     <p class="lead text-muted mb-0">
-        Review the generated recommendations below, along with the inputs used to create this strategy.
+        Review the generated marketing content below, along with the details used to create it.
     </p>
 </section>
 
 <div class="row g-4 align-items-start">
     <div class="col-12 col-lg-8">
-        <article class="card border-0 shadow-sm h-100">
+        <article class="card border-0 shadow-sm h-100 result-card">
             <div class="card-header bg-primary text-white py-3">
-                <h2 class="h4 mb-0">Generated AI Output</h2>
+                <h2 class="h4 mb-0">Generated Marketing Content</h2>
             </div>
             <div class="card-body p-4 p-md-5">
                 {% if result %}
-                    <div class="bg-light border rounded-3 p-3 p-md-4">
-                        <pre class="mb-0 text-dark" style="white-space: pre-wrap; font-family: inherit;">{{ result }}</pre>
+                    <div class="result-output bg-light border rounded-3 p-3 p-md-4">
+                        <pre id="generated-output" class="mb-0 text-dark">{{ result }}</pre>
                     </div>
                 {% else %}
                     <div class="alert alert-warning mb-0" role="alert">
-                        No strategy output was returned. Please go back and try generating another strategy.
+                        No marketing content was returned. Please go back and try generating more content.
                     </div>
                 {% endif %}
             </div>
@@ -38,10 +38,10 @@
             </div>
             <div class="card-body p-4">
                 {% if form_data %}
-                    <dl class="mb-0">
+                    <dl class="mb-0 submitted-details">
                         {% for field, value in form_data.items() %}
                             <dt class="text-capitalize text-muted small mb-1">{{ field.replace('_', ' ') }}</dt>
-                            <dd class="fw-semibold mb-3 text-break">{{ value }}</dd>
+                            <dd class="fw-semibold mb-3 text-break">{{ value or 'Not provided' }}</dd>
                         {% endfor %}
                     </dl>
                 {% else %}
@@ -52,9 +52,17 @@
     </div>
 </div>
 
-<div class="d-grid d-sm-flex justify-content-sm-center justify-content-lg-start mt-4">
+<div class="result-actions d-grid gap-2 d-sm-flex justify-content-sm-center justify-content-lg-start mt-4">
+    {% if result %}
+        <button class="btn btn-outline-secondary btn-lg px-4" type="button" data-copy-target="generated-output">
+            Copy Output
+        </button>
+        <button class="btn btn-outline-secondary btn-lg px-4" type="button" data-download-target="generated-output" data-download-filename="marketmind-content.txt">
+            Download Output
+        </button>
+    {% endif %}
     <a class="btn btn-primary btn-lg px-4" href="{{ url_for('index') }}">
-        Generate another strategy
+        Generate More Content
     </a>
 </div>
 {% endblock %}

@@ -200,3 +200,22 @@ footer {
         padding-bottom: 0.85rem;
     }
 }
+
+.result-card pre {
+    font-family: inherit;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.result-output {
+    max-height: 48rem;
+    overflow: auto;
+}
+
+.result-actions .btn {
+    min-width: 11rem;
+}
+
+.submitted-details dd:last-child {
+    margin-bottom: 0 !important;
+}
