@@ -1,92 +1,104 @@
 {% extends "base.html" %}
 
-{% block title %}MarketMind AI | Generate Marketing Strategy{% endblock %}
+{% block title %}MarketMind AI | AI Marketing Content Generator{% endblock %}
 
 {% block content %}
 <section class="py-4 py-lg-5">
     <div class="row align-items-center g-5">
         <div class="col-lg-6">
-            <span class="badge rounded-pill text-bg-primary mb-3 px-3 py-2">AI-powered marketing plans</span>
-            <h1 class="display-5 fw-bold lh-1 mb-4">Build a focused go-to-market strategy in minutes.</h1>
+            <span class="badge rounded-pill text-bg-primary mb-3 px-3 py-2">AI-powered marketing content</span>
+            <h1 class="display-5 fw-bold lh-1 mb-4">AI Marketing Content Generator</h1>
             <p class="lead text-muted mb-4">
-                MarketMind AI turns your business idea, audience insights, goals, and budget into a practical
-                marketing strategy with channel recommendations, competitive positioning, and next steps.
+                MarketMind AI turns your prompt, brand context, audience, platform, and offer into ready-to-use
+                marketing content for campaigns, social posts, articles, print assets, and complete content packs.
             </p>
             <div class="d-flex flex-column flex-sm-row gap-3 mb-4">
-                <a class="btn btn-primary btn-lg px-4" href="#strategy-form">Start your strategy</a>
+                <a class="btn btn-primary btn-lg px-4" href="#content-form">Create content</a>
                 <a class="btn btn-outline-secondary btn-lg px-4" href="#how-it-works">How it works</a>
             </div>
             <div class="row g-3" id="how-it-works">
                 <div class="col-sm-4">
                     <div class="p-3 bg-white rounded-3 shadow-sm h-100">
-                        <div class="fw-bold">1. Share context</div>
-                        <small class="text-muted">Describe your offer, market, and constraints.</small>
+                        <div class="fw-bold">1. Choose format</div>
+                        <small class="text-muted">Pick the marketing asset you want to generate.</small>
                     </div>
                 </div>
                 <div class="col-sm-4">
                     <div class="p-3 bg-white rounded-3 shadow-sm h-100">
-                        <div class="fw-bold">2. Analyze fit</div>
-                        <small class="text-muted">Map audience needs to channels and messaging.</small>
+                        <div class="fw-bold">2. Add direction</div>
+                        <small class="text-muted">Share your main prompt and any helpful brand context.</small>
                     </div>
                 </div>
                 <div class="col-sm-4">
                     <div class="p-3 bg-white rounded-3 shadow-sm h-100">
-                        <div class="fw-bold">3. Execute</div>
-                        <small class="text-muted">Leave with a clear, prioritized action plan.</small>
+                        <div class="fw-bold">3. Publish faster</div>
+                        <small class="text-muted">Use the generated copy as a strong campaign starting point.</small>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-6">
-            <div class="card border-0 shadow-lg" id="strategy-form">
+            <div class="card border-0 shadow-lg" id="content-form">
                 <div class="card-body p-4 p-lg-5">
                     <div class="mb-4">
-                        <h2 class="h3 fw-bold mb-2">Generate your strategy</h2>
-                        <p class="text-muted mb-0">Complete the brief below. Only the topic is required.</p>
+                        <h2 class="h3 fw-bold mb-2">Generate marketing content</h2>
+                        <p class="text-muted mb-0">Choose a content type and write your main prompt. Optional fields can be left blank.</p>
                     </div>
 
                     <form action="{{ url_for('analyze') }}" method="post">
                         <div class="mb-3">
-                            <label for="topic" class="form-label fw-semibold">Topic <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-lg" id="topic" name="topic" placeholder="e.g., Launching a sustainable skincare line" required>
+                            <label for="content_type" class="form-label fw-semibold">Content Type <span class="text-danger">*</span></label>
+                            <select class="form-control form-control-lg" id="content_type" name="content_type" required>
+                                <option value="" selected disabled>Select a content type</option>
+                                <option value="Marketing Text">Marketing Text</option>
+                                <option value="Article">Article</option>
+                                <option value="Social Media Caption">Social Media Caption</option>
+                                <option value="Poster">Poster</option>
+                                <option value="Banner">Banner</option>
+                                <option value="Pamphlet">Pamphlet</option>
+                                <option value="AI Marketing Pack">AI Marketing Pack</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="topic" class="form-label fw-semibold">Main Prompt <span class="text-danger">*</span></label>
+                            <textarea class="form-control form-control-lg" id="topic" name="topic" rows="4" placeholder="e.g., Write a persuasive launch campaign for a sustainable skincare line" required></textarea>
                         </div>
 
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label for="audience" class="form-label fw-semibold">Audience</label>
+                                <label for="business_name" class="form-label fw-semibold">Business Name</label>
+                                <input type="text" class="form-control" id="business_name" name="business_name" placeholder="e.g., GlowLeaf Co.">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="product_service" class="form-label fw-semibold">Product/Service</label>
+                                <input type="text" class="form-control" id="product_service" name="product_service" placeholder="e.g., Refillable skincare kit">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="audience" class="form-label fw-semibold">Target Audience</label>
                                 <input type="text" class="form-control" id="audience" name="audience" placeholder="e.g., Gen Z beauty buyers">
                             </div>
                             <div class="col-md-6">
-                                <label for="goal" class="form-label fw-semibold">Goal</label>
-                                <input type="text" class="form-control" id="goal" name="goal" placeholder="e.g., Increase qualified leads">
+                                <label for="platform" class="form-label fw-semibold">Platform</label>
+                                <input type="text" class="form-control" id="platform" name="platform" placeholder="e.g., Instagram, LinkedIn, landing page">
                             </div>
                             <div class="col-md-6">
-                                <label for="budget" class="form-label fw-semibold">Budget</label>
-                                <input type="text" class="form-control" id="budget" name="budget" placeholder="e.g., $5,000/month">
+                                <label for="tone" class="form-label fw-semibold">Tone</label>
+                                <input type="text" class="form-control" id="tone" name="tone" placeholder="e.g., Friendly, premium, bold">
                             </div>
                             <div class="col-md-6">
-                                <label for="timeline" class="form-label fw-semibold">Timeline</label>
-                                <input type="text" class="form-control" id="timeline" name="timeline" placeholder="e.g., 90 days">
+                                <label for="offer" class="form-label fw-semibold">Offer</label>
+                                <input type="text" class="form-control" id="offer" name="offer" placeholder="e.g., 20% off first order">
                             </div>
                         </div>
 
-                        <div class="mb-3 mt-3">
-                            <label for="competitors" class="form-label fw-semibold">Competitors</label>
-                            <input type="text" class="form-control" id="competitors" name="competitors" placeholder="List key competitors or alternatives">
+                        <div class="mb-4 mt-3">
+                            <label for="notes" class="form-label fw-semibold">Additional Instructions</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="4" placeholder="Add brand voice, must-use phrases, visual direction, length, formatting, calls to action, or constraints."></textarea>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="channels" class="form-label fw-semibold">Channels</label>
-                            <input type="text" class="form-control" id="channels" name="channels" placeholder="e.g., SEO, email, TikTok, LinkedIn, paid search">
-                        </div>
-
-                        <div class="mb-4">
-                            <label for="notes" class="form-label fw-semibold">Notes</label>
-                            <textarea class="form-control" id="notes" name="notes" rows="4" placeholder="Add brand voice, constraints, offers, geographies, or any details the AI should consider."></textarea>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary btn-lg w-100">Generate Strategy</button>
+                        <button type="submit" class="btn btn-primary btn-lg w-100">Generate Content</button>
                     </form>
                 </div>
             </div>
