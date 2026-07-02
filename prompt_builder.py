@@ -22,29 +22,31 @@ CONTENT_TYPE_INSTRUCTIONS = {
         "to use. Include a strong headline, concise body copy, and a clear CTA."
     ),
     "Article": (
-        "Write a structured marketing article with an engaging title, intro, "
-        "useful section headings, practical body content, and a closing CTA."
+        "Write a structured marketing article with a title, introduction, 3 to 5 "
+        "useful sections, conclusion, and CTA. Keep the advice practical and "
+        "audience-specific."
     ),
     "Social Media Caption": (
-        "Write a platform-ready social media caption with a hook, concise value "
-        "proposition, natural brand voice, CTA, and relevant hashtags."
+        "Write a platform-ready social media caption with four clear parts: hook, "
+        "persuasive body, CTA, and relevant hashtags."
     ),
     "Poster": (
-        "Create poster content only: headline, supporting copy, CTA, and layout "
-        "or visual direction. Do not generate or request an actual image."
+        "Create poster content only with: brand name, strong headline, supporting "
+        "subheadline, exactly 3 benefits, CTA, and layout or visual direction. "
+        "Do not generate or request an actual image."
     ),
     "Banner": (
-        "Create banner content only: short headline, compact supporting copy, "
+        "Create banner content only with: short headline, one-line support text, "
         "CTA, and layout or visual direction. Do not generate or request an "
         "actual image."
     ),
     "Pamphlet": (
-        "Create pamphlet content only: panel-by-panel copy, CTA, and layout or "
-        "visual direction. Do not generate or request an actual image."
+        "Create pamphlet content only with: headline, introduction, benefits, "
+        "features, offer, CTA, contact section, and layout or visual direction."
     ),
     "AI Marketing Pack": (
-        "Create a complete AI marketing pack with: brief strategy, social media "
-        "caption, poster copy, banner copy, hashtags, and CTA."
+        "Create a complete AI marketing pack with: campaign idea, poster copy, "
+        "banner copy, social caption, hashtags, and CTA."
     ),
 }
 
@@ -123,10 +125,10 @@ def build_prompt(form_data: dict) -> str:
             [
                 "",
                 "Required pack sections:",
-                "1. Brief marketing strategy",
-                "2. Social media caption",
-                "3. Poster copy",
-                "4. Banner copy",
+                "1. Campaign idea",
+                "2. Poster copy",
+                "3. Banner copy",
+                "4. Social caption",
                 "5. Hashtags",
                 "6. Call to action",
             ]
@@ -139,6 +141,10 @@ def build_prompt(form_data: dict) -> str:
             "- Use only optional details that were provided by the user.",
             "- Keep the output practical, polished, and ready to adapt for a "
             "real marketing campaign.",
+            "- Lead with benefits, audience relevance, emotional hooks, urgency "
+            "when an offer is present, and action-oriented CTAs.",
+            "- Never write prompt-transformer phrases such as 'Make X easier', "
+            "'Make [prompt] easier', or generic AI filler.",
             "- Match the requested tone and platform when those details are "
             "provided.",
         ]

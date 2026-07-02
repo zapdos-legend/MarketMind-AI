@@ -28,8 +28,6 @@ SUPPORTED_CONTENT_TYPES = (
     "Pamphlet",
     "AI Marketing Pack",
 )
-
-
 def _shorten(text: str, limit: int = 260) -> str:
     """Return a compact preview of text for the fallback response."""
     cleaned = " ".join(text.split())
@@ -75,110 +73,288 @@ def _fallback_context(prompt: str) -> dict[str, str]:
     tone = _extract_detail(prompt, "Tone")
     offer = _extract_detail(prompt, "Offer/promotion")
 
-    brand = business_name or product_service or topic
-    audience_text = f" for {audience}" if audience else ""
-    offer_text = f" {offer}" if offer else ""
-    platform_text = f" on {platform}" if platform else ""
-    tone_text = f" Use a {tone} tone." if tone else ""
+    brand = business_name or product_service or "MarketMind AI"
 
     return {
         "topic": topic,
         "brand": brand,
-        "audience_text": audience_text,
-        "offer_text": offer_text,
-        "platform_text": platform_text,
-        "tone_text": tone_text,
+        "product_service": product_service,
+        "audience": audience,
+        "platform": platform,
+        "tone": tone,
+        "offer": offer,
     }
+
+
+def _title_case_phrase(text: str) -> str:
+    """Return compact title case without preserving noisy prompt verbs."""
+    cleaned = re.sub(r"\b(promote|launch|create|advertise|announce)\b", "", text, flags=re.IGNORECASE)
+    cleaned = " ".join(cleaned.replace("/", " / ").split())
+    return cleaned.title() if cleaned else text.title()
+
+
+def _is_offer(topic: str, offer: str = "") -> bool:
+    """Detect whether the request contains a promotional offer."""
+    combined = f"{topic} {offer}".lower()
+    return bool(re.search(r"\b(\d+%|off|sale|deal|discount|free|trial|weekend|limited|demo)\b", combined))
+
+
+def _detect_category(topic: str, audience: str = "") -> str:
+    """Map a request to a broad category for stronger fallback copy."""
+    combined = f"{topic} {audience}".lower()
+    if any(word in combined for word in ("fitness", "workout", "gym", "health")):
+        return "fitness"
+    if any(word in combined for word in ("pizza", "restaurant", "food", "meal")):
+        return "food"
+    if any(word in combined for word in ("iit", "jee", "coaching", "academy", "class", "student")):
+        return "education"
+    if any(word in combined for word in ("skin", "beauty", "skincare", "glow")):
+        return "beauty"
+    return "general"
+
+
+def _audience_phrase(audience: str) -> str:
+    return f" for {audience}" if audience else ""
+
+
+def generate_headline(topic: str, brand: str = "", audience: str = "", offer: str = "") -> str:
+    """Generate a benefit-first headline that avoids prompt-rewriter phrasing."""
+    category = _detect_category(topic, audience)
+    offer_source = offer or topic
+    offer_match = re.search(r"(\d+%\s*off[^,.!]*|free\s+[\w -]+|free\s+demo\s+lecture)", offer_source, re.IGNORECASE)
+    if offer_match:
+        return offer_match.group(1).strip().upper()
+    if category == "fitness":
+        return "GET FIT. STAY FOCUSED."
+    if category == "food" and _is_offer(topic, offer):
+        return "50% OFF PIZZA THIS WEEKEND" if "50" in f"{topic} {offer}" else "FRESH DEALS. HOT FLAVOR."
+    if category == "education":
+        return "BUILD YOUR IIT/JEE EDGE"
+    if category == "beauty":
+        return "GLOW STARTS HERE"
+    return f"{_title_case_phrase(topic)} That Gets Results"
+
+
+def generate_subheadline(topic: str, brand: str = "", audience: str = "", offer: str = "") -> str:
+    """Generate concise supporting copy with value and audience fit."""
+    category = _detect_category(topic, audience)
+    audience_text = _audience_phrase(audience)
+    if category == "fitness":
+        return f"The fitness app designed for busy {audience or 'people who want better routines'}."
+    if category == "food":
+        return "Your favorite pizzas at half price, fresh from the oven all weekend."
+    if category == "education":
+        return f"Focused coaching, expert guidance, and exam-ready practice{audience_text}."
+    if category == "beauty":
+        return f"A premium skincare ritual made for fresh, confident glow{audience_text}."
+    if offer:
+        return f"A clear reason to act now: {offer}."
+    return f"A practical, benefit-led solution{audience_text} from {brand or 'your brand'}."
+
+
+def generate_benefits(topic: str, audience: str = "", limit: int = 3) -> list[str]:
+    """Return audience-relevant benefit bullets."""
+    category = _detect_category(topic, audience)
+    benefits_by_category = {
+        "fitness": ["Quick Workouts", "Goal Tracking", "Personalized Plans"],
+        "food": ["Half-Price Favorites", "Family-Friendly Combos", "Hot Weekend Delivery"],
+        "education": ["Expert Faculty", "Exam-Focused Practice", "Personal Doubt Support"],
+        "beauty": ["Visible Glow", "Premium Ingredients", "Easy Daily Routine"],
+        "general": ["Clear Value", "Fast Results", "Simple Next Step"],
+    }
+    return benefits_by_category[category][:limit]
+
+
+def generate_cta(topic: str, offer: str = "", content_type: str = "") -> str:
+    """Generate an action-oriented CTA from the offer and content type."""
+    combined = f"{topic} {offer}".lower()
+    if "trial" in combined:
+        return "Start Your Free Trial"
+    if "demo" in combined:
+        return "Book Your Free Demo"
+    if any(word in combined for word in ("pizza", "food", "meal")):
+        return "Order Now"
+    if any(word in combined for word in ("shop", "skincare", "beauty", "kit")):
+        return "Shop Now"
+    if content_type == "Article":
+        return "Explore the offer today"
+    return "Get Started Today"
+
+
+def generate_offer_copy(topic: str, offer: str = "") -> str:
+    """Generate urgency and offer copy without inventing when no offer exists."""
+    if offer:
+        return f"Offer: {offer}. Act now while it is available."
+    if _is_offer(topic):
+        return f"Offer: {_title_case_phrase(topic)}. Available for a limited time."
+    return "Offer: Ask about current packages, pricing, and launch specials."
 
 
 def _visual_guidance(content_type: str) -> str:
     """Return visual/layout guidance for copy-only visual formats."""
     if content_type == "Poster":
-        return "Place the headline at the top, one supporting benefit in the center, and the CTA in a bold bottom block. Use one hero visual area and high-contrast colors."
+        return "Use a bold brand lockup, oversized headline, three benefit ticks, and a high-contrast CTA block."
     if content_type == "Banner":
-        return "Use a left-aligned headline, a short benefit line, and a right-aligned CTA button. Keep generous whitespace for quick scanning."
-    return "Organize copy into front, inside, and back panels with clear section breaks, concise bullets, and a repeated CTA on the back panel."
+        return "Use a short headline, one support line, and a button-style CTA with generous whitespace."
+    return "Organize the pamphlet into clear panels: cover, introduction, benefits, features, offer, CTA, and contact."
 
 
 def _local_fallback(prompt: str, reason: str | None = None) -> str:
-    """Build deterministic marketing content without overriding the prompt."""
+    """Build deterministic marketing content without weak prompt-rewriter copy."""
     content_type = _extract_content_type(prompt)
     context = _fallback_context(prompt)
     brand = context["brand"]
     topic = context["topic"]
-    audience_text = context["audience_text"]
-    offer_text = context["offer_text"]
-    platform_text = context["platform_text"]
-    tone_text = context["tone_text"]
+    audience = context["audience"]
+    offer = context["offer"]
+    platform = context["platform"]
+    tone = context["tone"]
+    headline = generate_headline(topic, brand, audience, offer)
+    if content_type == "Poster":
+        headline = generate_headline(topic, brand, audience, "")
+    subheadline = generate_subheadline(topic, brand, audience, offer)
+    cta = generate_cta(topic, offer, content_type)
+    benefits = generate_benefits(topic, audience)
+    offer_copy = generate_offer_copy(topic, offer)
     note = f"\n\nNote: Using local fallback because {reason}." if reason else ""
+    tone_line = f"\nTone: {tone}" if tone else ""
+    platform_line = f"\nPlatform: {platform}" if platform else ""
 
     if content_type == "Article":
-        return f"""# {topic}: A Smarter Way to Get Results
+        return f"""# {headline.title()}
 
 ## Introduction
-{brand} helps make {topic} easier to understand, choose, and act on{audience_text}.{tone_text}
+{brand} helps {audience or 'customers'} move from interest to action with a clear value proposition: {subheadline}
 
-## Why it matters
-Customers want clear benefits, proof, and a simple next step. Focus the message on the outcome they care about most and remove friction from the decision.
+## 1. Why This Matters
+People respond when the promise is specific, relevant, and easy to act on. {brand} leads with outcomes instead of generic claims.
 
-## What to do next
-Use concise copy, helpful examples, and a direct CTA so readers know exactly how to move forward.
+## 2. What Customers Get
+- {benefits[0]}
+- {benefits[1]}
+- {benefits[2]}
 
-## CTA
-Explore {brand} today{offer_text} and take the next step with confidence.{note}"""
+## 3. The Offer
+{offer_copy}
+
+## 4. How To Take The Next Step
+Choose the option that fits your goal, then follow the CTA while motivation is high.
+
+## Conclusion
+Strong marketing gives people a reason to care and a simple path to respond.
+
+CTA: {cta}.{note}"""
 
     if content_type == "Social Media Caption":
-        return f"""Hook: Ready to make {topic} simpler?
+        hashtags = _hashtags(brand, topic, audience)
+        return f"""Hook: {headline}
 
-{brand} gives you a clearer way to move from interest to action{audience_text}{platform_text}. Focus on the outcome, skip the guesswork, and take the next step today.{tone_text}
+Body: {subheadline} {offer_copy}
 
-CTA: Learn more and get started{offer_text}.
+CTA: {cta}.
 
-Hashtags: #Marketing #BrandGrowth #SmallBusiness #ContentMarketing #GetStarted{note}"""
+Hashtags: {hashtags}{tone_line}{platform_line}{note}"""
 
-    if content_type in VISUAL_CONTENT_TYPES:
-        if content_type == "Pamphlet":
-            body = f"""Front panel: {brand}\nHeadline: Make {topic} easier\nSubcopy: Clear benefits, practical details, and a simple next step{audience_text}.\n\nInside panel 1: Why choose this\n- Benefit-led message focused on the customer's goal\n- Simple explanation of what is offered\n- Proof points or details that build trust\n\nInside panel 2: Offer\nHighlight:{offer_text or ' a clear reason to act now'}\n\nBack panel CTA: Contact {brand} to learn more and get started."""
-        else:
-            body = f"""Headline: Make {topic} easier\nSupporting copy: {brand} helps you get clear, practical results{audience_text}.\nCTA: Get started{offer_text}."""
+    if content_type == "Poster":
+        return f"""Poster Copy
+Brand: {brand.upper()}
+Headline: {headline}
+Subheadline: {subheadline}
+Benefits:
+- ✓ {benefits[0]}
+- ✓ {benefits[1]}
+- ✓ {benefits[2]}
+CTA: {cta}
+Offer: {offer_copy}
 
-        return f"""{content_type} Copy
-{body}
+Layout / Visual Direction
+{_visual_guidance(content_type)} Do not generate an actual image.{note}"""
+
+    if content_type == "Banner":
+        return f"""Banner Copy
+Headline: {headline}
+Supporting copy: {subheadline}
+CTA: {cta}
+
+Layout / Visual Direction
+{_visual_guidance(content_type)} Do not generate an actual image.{note}"""
+
+    if content_type == "Pamphlet":
+        return f"""Pamphlet Copy
+Headline: {headline}
+Introduction: {subheadline}
+
+Benefits:
+- {benefits[0]}
+- {benefits[1]}
+- {benefits[2]}
+
+Features:
+- Structured guidance tailored to {audience or 'your audience'}
+- Clear next steps from first interest to conversion
+- Practical details that build trust quickly
+
+Offer:
+{offer_copy}
+
+CTA: {cta}
+
+Contact Section:
+Contact {brand} today to learn more, ask questions, and reserve your spot.
 
 Layout / Visual Direction
 {_visual_guidance(content_type)} Do not generate an actual image.{note}"""
 
     if content_type == "AI Marketing Pack":
-        return f"""Brief Strategy
-Position {brand} as a clear, practical solution for {topic}{audience_text}. Lead with the most immediate benefit, support it with proof, and drive every asset toward one CTA.
-
-Social Caption
-Ready to make {topic} easier? {brand} helps you move forward with clarity and confidence{platform_text}. Learn more today{offer_text}.
+        hashtags = _hashtags(brand, topic, audience)
+        return f"""Campaign Idea
+Lead with \"{headline}\" and turn the offer into a clear reason to act now.
 
 Poster Copy
-Headline: Make {topic} easier
-Supporting copy: Clear benefits. Simple next step. Built for real results.
-CTA: Get started today.
+Brand: {brand.upper()}
+Headline: {headline}
+Subheadline: {subheadline}
+Benefits: {', '.join(benefits)}
+CTA: {cta}
 
 Banner Copy
-Headline: Better {topic} starts here
-Copy: Discover a simpler way forward.
-CTA: Learn more
+Headline: {headline}
+Supporting copy: {subheadline}
+CTA: {cta}
+
+Social Caption
+Hook: {headline}
+Body: {subheadline} {offer_copy}
+CTA: {cta}.
 
 Hashtags
-#Marketing #BrandGrowth #ContentMarketing #SmallBusiness #CampaignReady
+{hashtags}
 
 CTA
-Choose {brand} and take the next step today{offer_text}.{note}"""
+{cta}{note}"""
 
     return f"""Headline
-Make {topic} easier with {brand}
+{headline}
 
 Body Copy
-Turn interest into action with clear, benefit-led messaging{audience_text}. {brand} helps people understand the value quickly, see why it matters, and know exactly what to do next.{tone_text}
+{subheadline} {offer_copy} Built to help {audience or 'customers'} understand the value quickly and take action with confidence.
 
 CTA
-Get started today{offer_text}.{note}"""
+{cta}.{note}"""
+
+
+def _hashtags(brand: str, topic: str, audience: str = "") -> str:
+    """Create relevant lightweight hashtags for fallback content."""
+    category = _detect_category(topic, audience)
+    tags = {
+        "fitness": ["#FitnessApp", "#CollegeFitness", "#FitGoals", "#HealthyHabits"],
+        "food": ["#PizzaDeal", "#WeekendOffer", "#FamilyPizza", "#OrderNow"],
+        "education": ["#IITJEE", "#ExamPrep", "#CoachingClasses", "#StudentSuccess"],
+        "beauty": ["#Skincare", "#GlowUp", "#BeautyRoutine", "#GenZBeauty"],
+        "general": ["#Marketing", "#BrandGrowth", "#GetStarted", "#SpecialOffer"],
+    }[category]
+    brand_tag = "#" + re.sub(r"[^A-Za-z0-9]", "", brand.title()) if brand else "#MarketMindAI"
+    return " ".join([brand_tag, *tags])
 
 
 def _call_openai(prompt: str, api_key: str) -> str:
@@ -187,11 +363,12 @@ def _call_openai(prompt: str, api_key: str) -> str:
         "model": os.environ.get("OPENAI_MODEL", DEFAULT_MODEL),
         "input": prompt,
         "instructions": (
-            "You are a helpful AI marketing content generator. Follow the user's "
-            "prompt exactly, including requested content type, sections, tone, "
-            "platform, and visual-output rules. Do not replace the request with "
-            "a generic marketing strategy template. For poster, banner, and "
-            "pamphlet requests, provide copy plus layout or visual guidance only."
+            "You are a senior marketing copywriter. Write finished marketing copy, "
+            "not prompt rewrites or generic strategy. Follow the requested content "
+            "type and sections exactly. Lead with concrete benefits, audience fit, "
+            "emotional hooks, urgency when relevant, and action-oriented CTAs. Never "
+            "use weak filler such as 'Make X easier'. For poster, banner, and pamphlet "
+            "requests, provide copy plus layout or visual guidance only."
         ),
     }
 
