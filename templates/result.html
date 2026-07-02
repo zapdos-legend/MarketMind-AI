@@ -37,6 +37,20 @@
                 <h2 class="h5 mb-0">Submitted Details</h2>
             </div>
             <div class="card-body p-4">
+                {% if asset %}
+                    <div class="asset-available border rounded-3 p-3 mb-4">
+                        <p class="text-uppercase text-primary fw-semibold small mb-2">Asset Preview Available</p>
+                        <p class="mb-3 text-muted">Your {{ asset.label }} has been created as a downloadable HTML preview.</p>
+                        <div class="d-grid gap-2">
+                            <a class="btn btn-primary" href="{{ url_for('open_generated_asset', filename=asset.filename) }}" target="_blank" rel="noopener">
+                                Open Asset
+                            </a>
+                            <a class="btn btn-outline-secondary" href="{{ url_for('download_generated_asset', filename=asset.filename) }}">
+                                Download Asset
+                            </a>
+                        </div>
+                    </div>
+                {% endif %}
                 {% if form_data %}
                     <dl class="mb-0 submitted-details">
                         {% for field, value in form_data.items() %}

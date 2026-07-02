@@ -219,3 +219,8 @@ footer {
 .submitted-details dd:last-child {
     margin-bottom: 0 !important;
 }
+
+.asset-available {
+    background: linear-gradient(135deg, rgba(79, 70, 229, 0.08), rgba(6, 182, 212, 0.1));
+    border-color: rgba(79, 70, 229, 0.16) !important;
+}
