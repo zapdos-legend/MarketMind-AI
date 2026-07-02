@@ -3,7 +3,53 @@
 from __future__ import annotations
 
 
-def _clean_value(value: object, default: str = "Not specified") -> str:
+SUPPORTED_CONTENT_TYPES = {
+    "Marketing Text",
+    "Article",
+    "Social Media Caption",
+    "Poster",
+    "Banner",
+    "Pamphlet",
+    "AI Marketing Pack",
+}
+
+VISUAL_DIRECTION_CONTENT_TYPES = {"Poster", "Banner", "Pamphlet"}
+
+
+CONTENT_TYPE_INSTRUCTIONS = {
+    "Marketing Text": (
+        "Write persuasive marketing copy that is benefit-led, clear, and ready "
+        "to use. Include a strong headline, concise body copy, and a clear CTA."
+    ),
+    "Article": (
+        "Write a structured marketing article with an engaging title, intro, "
+        "useful section headings, practical body content, and a closing CTA."
+    ),
+    "Social Media Caption": (
+        "Write a platform-ready social media caption with a hook, concise value "
+        "proposition, natural brand voice, CTA, and relevant hashtags."
+    ),
+    "Poster": (
+        "Create poster content only: headline, supporting copy, CTA, and layout "
+        "or visual direction. Do not generate or request an actual image."
+    ),
+    "Banner": (
+        "Create banner content only: short headline, compact supporting copy, "
+        "CTA, and layout or visual direction. Do not generate or request an "
+        "actual image."
+    ),
+    "Pamphlet": (
+        "Create pamphlet content only: panel-by-panel copy, CTA, and layout or "
+        "visual direction. Do not generate or request an actual image."
+    ),
+    "AI Marketing Pack": (
+        "Create a complete AI marketing pack with: brief strategy, social media "
+        "caption, poster copy, banner copy, hashtags, and CTA."
+    ),
+}
+
+
+def _clean_value(value: object, default: str = "") -> str:
     """Return a safe, single-line string for prompt content."""
     if value is None:
         return default
@@ -12,37 +58,90 @@ def _clean_value(value: object, default: str = "Not specified") -> str:
     return cleaned if cleaned else default
 
 
+def _normalize_content_type(value: object) -> str:
+    """Return a supported content type, falling back to Marketing Text."""
+    content_type = _clean_value(value, "Marketing Text")
+    return content_type if content_type in SUPPORTED_CONTENT_TYPES else "Marketing Text"
+
+
+def _format_optional_details(form_data: dict[str, object]) -> str:
+    """Format only user-provided optional fields for the prompt."""
+    optional_fields = (
+        ("business_name", "Business name"),
+        ("product_service", "Product/service"),
+        ("audience", "Target audience"),
+        ("platform", "Platform/channel"),
+        ("tone", "Tone"),
+        ("offer", "Offer/promotion"),
+        ("notes", "Additional notes"),
+    )
+    details = []
+
+    for field_name, label in optional_fields:
+        value = _clean_value(form_data.get(field_name))
+        if value:
+            details.append(f"- {label}: {value}")
+
+    if not details:
+        return "No additional optional details were provided."
+
+    return "\n".join(details)
+
+
 def build_prompt(form_data: dict) -> str:
-    """Build a clear marketing strategy prompt from submitted form data."""
+    """Build a marketing content prompt from submitted form data."""
     if not isinstance(form_data, dict):
         form_data = {}
 
-    topic = _clean_value(form_data.get("topic"), "the submitted business topic")
-    audience = _clean_value(form_data.get("audience"))
-    goal = _clean_value(form_data.get("goal"))
-    budget = _clean_value(form_data.get("budget"))
-    timeline = _clean_value(form_data.get("timeline"))
-    competitors = _clean_value(form_data.get("competitors"))
-    channels = _clean_value(form_data.get("channels"))
-    notes = _clean_value(form_data.get("notes"))
+    content_type = _normalize_content_type(form_data.get("content_type"))
+    topic = _clean_value(form_data.get("topic"), "the submitted marketing topic")
+    optional_details = _format_optional_details(form_data)
+    primary_instruction = CONTENT_TYPE_INSTRUCTIONS[content_type]
 
-    return f"""Create a practical marketing strategy for: {topic}.
+    sections = [
+        f"Create {content_type} for: {topic}.",
+        "",
+        "User-provided details:",
+        optional_details,
+        "",
+        "Primary task:",
+        primary_instruction,
+    ]
 
-Use these details from the user:
-- Target audience: {audience}
-- Main goal: {goal}
-- Budget: {budget}
-- Timeline: {timeline}
-- Competitors or alternatives: {competitors}
-- Preferred channels: {channels}
-- Additional notes: {notes}
+    if content_type in VISUAL_DIRECTION_CONTENT_TYPES:
+        sections.extend(
+            [
+                "",
+                "Important visual-output rule:",
+                "Provide copy and layout/visual direction only. Do not create, "
+                "embed, or describe the response as an actual generated image.",
+            ]
+        )
 
-Please include:
-1. A short summary of the opportunity.
-2. Recommended positioning and key message.
-3. The best marketing channels to prioritize.
-4. 3 to 5 actionable campaign ideas.
-5. Simple success metrics to track.
-6. Any important risks, assumptions, or next steps.
+    if content_type == "AI Marketing Pack":
+        sections.extend(
+            [
+                "",
+                "Required pack sections:",
+                "1. Brief marketing strategy",
+                "2. Social media caption",
+                "3. Poster copy",
+                "4. Banner copy",
+                "5. Hashtags",
+                "6. Call to action",
+            ]
+        )
 
-Keep the response clear, realistic, and useful for a beginner-friendly marketing plan."""
+    sections.extend(
+        [
+            "",
+            "General guidance:",
+            "- Use only optional details that were provided by the user.",
+            "- Keep the output practical, polished, and ready to adapt for a "
+            "real marketing campaign.",
+            "- Match the requested tone and platform when those details are "
+            "provided.",
+        ]
+    )
+
+    return "\n".join(sections)
