@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import campaign_engine
+import creative_engine
 
 
 SUPPORTED_CONTENT_TYPES = {
@@ -48,7 +49,7 @@ CONTENT_TYPE_INSTRUCTIONS = {
     ),
     "AI Marketing Pack": (
         "Create a complete AI marketing pack 2.0 with: campaign strategy, "
-        "marketing copy, poster copy, banner copy, pamphlet copy, social caption, "
+        "creative strategy, marketing copy, poster copy, banner copy, pamphlet copy, social caption, "
         "CTA variations, and hashtag suggestions."
     ),
 }
@@ -93,7 +94,7 @@ def _format_optional_details(form_data: dict[str, object]) -> str:
     return "\n".join(details)
 
 
-def build_prompt(form_data: dict, strategy: dict | None = None) -> str:
+def build_prompt(form_data: dict, strategy: dict | None = None, creative_strategy: dict | None = None) -> str:
     """Build a marketing content prompt from submitted form data and strategy."""
     if not isinstance(form_data, dict):
         form_data = {}
@@ -103,6 +104,8 @@ def build_prompt(form_data: dict, strategy: dict | None = None) -> str:
     optional_details = _format_optional_details(form_data)
     campaign_strategy = strategy or form_data.get("campaign_strategy") or campaign_engine.build_campaign_strategy(form_data)
     strategy_details = campaign_engine.format_strategy_for_prompt(campaign_strategy)
+    creative = creative_strategy or form_data.get("creative_strategy") or creative_engine.build_creative_strategy(form_data, campaign_strategy)
+    creative_details = creative_engine.format_creative_for_prompt(creative)
     primary_instruction = CONTENT_TYPE_INSTRUCTIONS[content_type]
 
     sections = [
@@ -113,6 +116,9 @@ def build_prompt(form_data: dict, strategy: dict | None = None) -> str:
         "",
         "Campaign strategy (use this as the source of truth before generating content):",
         strategy_details,
+        "",
+        "Creative strategy (use this as the creative direction for hooks, angles, visuals, and CTAs):",
+        creative_details,
         "",
         "Primary task:",
         primary_instruction,
@@ -134,13 +140,14 @@ def build_prompt(form_data: dict, strategy: dict | None = None) -> str:
                 "",
                 "Required pack sections:",
                 "1. Campaign Strategy",
-                "2. Marketing Copy",
-                "3. Poster",
-                "4. Banner",
-                "5. Pamphlet",
-                "6. Social Caption",
-                "7. CTA Variations (exactly 5)",
-                "8. Hashtag Suggestions (10-15)",
+                "2. Creative Strategy",
+                "3. Marketing Copy",
+                "4. Poster",
+                "5. Banner",
+                "6. Pamphlet",
+                "7. Social Caption",
+                "8. CTA Variations (exactly 5)",
+                "9. Hashtag Suggestions (10-15)",
             ]
         )
 
@@ -148,12 +155,13 @@ def build_prompt(form_data: dict, strategy: dict | None = None) -> str:
         [
             "",
             "General guidance:",
-            "- Generate from the campaign strategy first, not directly from the raw user prompt.",
+            "- Generate from the campaign strategy first, then execute through the creative strategy direction.",
             "- Use optional user details only to clarify or constrain the campaign strategy.",
             "- Keep the output practical, polished, and ready to adapt for a "
             "real marketing campaign.",
             "- Lead with benefits, audience relevance, emotional hooks, urgency "
             "when an offer is present, and action-oriented CTAs.",
+            "- Avoid generic corporate phrases like 'value customers can say yes to', 'unlock your potential', 'take your business to the next level', 'act now while it is available', and 'designed for success'.",
             "- Never write prompt-transformer phrases such as 'Make X easier', "
             "'Make [prompt] easier', or generic AI filler.",
             "- Match the requested tone and platform when those details are "

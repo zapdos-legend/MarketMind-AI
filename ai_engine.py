@@ -92,6 +92,15 @@ def _fallback_context(prompt: str) -> dict[str, str]:
     strategy_message = _extract_strategy_detail(prompt, "Marketing Message")
     strategy_value = _extract_strategy_detail(prompt, "Value Proposition")
     strategy_pains = _extract_strategy_detail(prompt, "Pain Points")
+    primary_hook = _extract_strategy_detail(prompt, "Primary Hook")
+    headline_options = _extract_strategy_detail(prompt, "Headline Options")
+    subheadline_options = _extract_strategy_detail(prompt, "Subheadline Options")
+    offer_framing = _extract_strategy_detail(prompt, "Offer Framing")
+    cta_options = _extract_strategy_detail(prompt, "CTA Options")
+    visual_direction = _extract_strategy_detail(prompt, "Visual Direction")
+    imagery_direction = _extract_strategy_detail(prompt, "Imagery Direction")
+    campaign_concept = _extract_strategy_detail(prompt, "Campaign Concept")
+    creative_angle = _extract_strategy_detail(prompt, "Creative Angle")
     brand = business_name or product_service or "MarketMind AI"
 
     return {
@@ -106,6 +115,15 @@ def _fallback_context(prompt: str) -> dict[str, str]:
         "strategy_message": strategy_message,
         "strategy_value": strategy_value,
         "strategy_pains": strategy_pains,
+        "primary_hook": primary_hook,
+        "headline_options": headline_options,
+        "subheadline_options": subheadline_options,
+        "offer_framing": offer_framing,
+        "cta_options": cta_options,
+        "visual_direction": visual_direction,
+        "imagery_direction": imagery_direction,
+        "campaign_concept": campaign_concept,
+        "creative_angle": creative_angle,
     }
 
 
@@ -140,6 +158,11 @@ def _audience_phrase(audience: str) -> str:
     return f" for {audience}" if audience else ""
 
 
+def _split_prompt_list(value: str) -> list[str]:
+    """Split semicolon-delimited prompt context into clean options."""
+    return [item.strip() for item in value.split(";") if item.strip()]
+
+
 def generate_headline(topic: str, brand: str = "", audience: str = "", offer: str = "") -> str:
     """Generate a benefit-first headline that avoids prompt-rewriter phrasing."""
     category = _detect_category(topic, audience)
@@ -148,11 +171,11 @@ def generate_headline(topic: str, brand: str = "", audience: str = "", offer: st
     if offer_match:
         return offer_match.group(1).strip().upper()
     if category == "fitness":
-        return "GET FIT. STAY FOCUSED."
+        return "START YOUR FITNESS STREAK"
     if category == "food" and _is_offer(topic, offer):
-        return "50% OFF PIZZA THIS WEEKEND" if "50" in f"{topic} {offer}" else "FRESH DEALS. HOT FLAVOR."
+        return "50% OFF THIS WEEKEND" if "50" in f"{topic} {offer}" else "HOT DEALS. FRESH FLAVOR."
     if category == "education":
-        return "BUILD YOUR IIT/JEE EDGE"
+        return "BUILD YOUR EXAM EDGE"
     if category == "beauty":
         return "GLOW STARTS HERE"
     return f"{_title_case_phrase(topic)} That Gets Results"
@@ -207,7 +230,7 @@ def generate_cta(topic: str, offer: str = "", content_type: str = "") -> str:
 def generate_offer_copy(topic: str, offer: str = "") -> str:
     """Generate urgency and offer copy without inventing when no offer exists."""
     if offer:
-        return f"Offer: {offer}. Act now while it is available."
+        return f"Offer: {offer}. Grab it while it is fresh."
     if _is_offer(topic):
         return f"Offer: {_title_case_phrase(topic)}. Available for a limited time."
     return "Offer: Ask about current packages, pricing, and launch specials."
@@ -236,13 +259,22 @@ def _local_fallback(prompt: str, reason: str | None = None) -> str:
     strategy_message = context.get("strategy_message", "")
     strategy_value = context.get("strategy_value", "")
     strategy_pains = context.get("strategy_pains", "")
-    headline = strategy_message.upper() if strategy_message else generate_headline(topic, brand, audience, offer)
-    if content_type == "Poster":
-        headline = generate_headline(topic, brand, audience, "")
-    subheadline = strategy_value or generate_subheadline(topic, brand, audience, offer)
-    cta = strategy_cta or generate_cta(topic, offer, content_type)
+    primary_hook = context.get("primary_hook", "")
+    headline_options = _split_prompt_list(context.get("headline_options", ""))
+    subheadline_options = _split_prompt_list(context.get("subheadline_options", ""))
+    cta_options = _split_prompt_list(context.get("cta_options", ""))
+    offer_framing = context.get("offer_framing", "")
+    visual_direction = context.get("visual_direction", "")
+    imagery_direction = context.get("imagery_direction", "")
+    campaign_concept = context.get("campaign_concept", "")
+    creative_angle = context.get("creative_angle", "")
+    headline = primary_hook or (headline_options[0] if headline_options else "") or (strategy_message.upper() if strategy_message else generate_headline(topic, brand, audience, offer))
+    if content_type == "Poster" and primary_hook:
+        headline = primary_hook
+    subheadline = (subheadline_options[0] if subheadline_options else "") or strategy_value or generate_subheadline(topic, brand, audience, offer)
+    cta = (cta_options[0] if cta_options else "") or strategy_cta or generate_cta(topic, offer, content_type)
     benefits = generate_benefits(topic, audience)
-    offer_copy = generate_offer_copy(topic, offer)
+    offer_copy = offer_framing or generate_offer_copy(topic, offer)
     note = f"\n\nNote: Using local fallback because {reason}." if reason else ""
     tone_line = f"\nTone: {tone}" if tone else ""
     platform_line = f"\nPlatform: {platform}" if platform else ""
@@ -295,7 +327,7 @@ CTA: {cta}
 Offer: {offer_copy}
 
 Layout / Visual Direction
-{_visual_guidance(content_type)} Do not generate an actual image.{note}"""
+{(visual_direction + " " + imagery_direction).strip() or _visual_guidance(content_type)} Do not generate an actual image.{note}"""
 
     if content_type == "Banner":
         return f"""Banner Copy
@@ -304,12 +336,12 @@ Supporting copy: {subheadline}
 CTA: {cta}
 
 Layout / Visual Direction
-{_visual_guidance(content_type)} Do not generate an actual image.{note}"""
+{(visual_direction + " " + imagery_direction).strip() or _visual_guidance(content_type)} Do not generate an actual image.{note}"""
 
     if content_type == "Pamphlet":
         return f"""Pamphlet Copy
-Headline: {headline}
-Introduction: {subheadline}
+Headline: {campaign_concept or headline}
+Introduction: {creative_angle or subheadline}
 
 Benefits:
 - {benefits[0]}
@@ -330,11 +362,11 @@ Contact Section:
 Contact {brand} today to learn more, ask questions, and reserve your spot.
 
 Layout / Visual Direction
-{_visual_guidance(content_type)} Do not generate an actual image.{note}"""
+{(visual_direction + " " + imagery_direction).strip() or _visual_guidance(content_type)} Do not generate an actual image.{note}"""
 
     if content_type == "AI Marketing Pack":
         strategy = {"primary_cta": cta, "offer_strategy": offer, "category": _detect_category(topic, audience)}
-        ctas = "\n".join(f"- {item}" for item in campaign_engine.cta_variations(strategy))
+        ctas = "\n".join(f"- {item}" for item in (cta_options or campaign_engine.cta_variations(strategy)))
         hashtags = " ".join(campaign_engine.hashtag_suggestions(strategy))
         return f"""Campaign Strategy
 Objective: {_extract_strategy_detail(prompt, "Objective") or "Drive measurable campaign action"}
@@ -345,6 +377,14 @@ Marketing Message: {strategy_message or headline}
 Offer: {offer_copy}
 CTA: {cta}
 
+Creative Strategy
+Campaign Concept: {campaign_concept or headline}
+Creative Angle: {creative_angle or subheadline}
+Primary Hook: {primary_hook or headline}
+Headline Options: {"; ".join(headline_options) or headline}
+Visual Direction: {visual_direction or _visual_guidance("Poster")}
+CTA Options: {"; ".join(cta_options) or cta}
+
 Marketing Copy
 Headline: {headline}
 Body Copy: {subheadline} {offer_copy}
@@ -352,18 +392,19 @@ CTA: {cta}
 
 Poster
 Brand: {brand.upper()}
-Headline: {headline}
+Headline: {primary_hook or headline}
 Subheadline: {subheadline}
 Benefits: {', '.join(benefits)}
 CTA: {cta}
 
 Banner
-Headline: {headline}
+Headline: {primary_hook or (headline_options[0] if headline_options else headline)}
 Supporting copy: {subheadline}
 CTA: {cta}
 
 Pamphlet
-Introduction: {subheadline}
+Title: {campaign_concept or headline}
+Introduction: {creative_angle or subheadline}
 Benefits: {', '.join(benefits)}
 Offer: {offer_copy}
 CTA: {cta}
@@ -413,7 +454,7 @@ def _call_openai(prompt: str, api_key: str) -> str:
             "not prompt rewrites or generic strategy. Follow the requested content "
             "type and sections exactly. Lead with concrete benefits, audience fit, "
             "emotional hooks, urgency when relevant, and action-oriented CTAs. Never "
-            "use weak filler such as 'Make X easier'. For poster, banner, and pamphlet "
+            "use weak filler such as 'Make X easier', 'value customers can say yes to', 'unlock your potential', 'take your business to the next level', 'act now while it is available', or 'designed for success'. For poster, banner, and pamphlet "
             "requests, provide copy plus layout or visual guidance only."
         ),
     }
