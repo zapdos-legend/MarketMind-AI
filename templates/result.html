@@ -13,6 +13,28 @@
 
 <div class="row g-4 align-items-start">
     <div class="col-12 col-lg-8">
+
+        {% if campaign_strategy %}
+        <article class="card border-0 shadow-sm mb-4 result-card">
+            <div class="card-header bg-dark text-white py-3">
+                <h2 class="h4 mb-0">Campaign Strategy</h2>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <div class="row g-3">
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Objective</p><p class="fw-semibold mb-0">{{ campaign_strategy.campaign_objective }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Audience</p><p class="fw-semibold mb-0">{{ campaign_strategy.target_audience }}</p></div>
+                    <div class="col-12"><p class="text-uppercase text-muted small fw-semibold mb-2">Pain Points</p><ul class="mb-0">{% for point in campaign_strategy.audience_pain_points %}<li>{{ point }}</li>{% endfor %}</ul></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Value Proposition</p><p class="mb-0">{{ campaign_strategy.value_proposition }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Marketing Message</p><p class="mb-0">{{ campaign_strategy.key_marketing_message }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Offer</p><p class="mb-0">{{ campaign_strategy.offer_strategy }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">CTA</p><p class="mb-0">{{ campaign_strategy.primary_cta }}</p></div>
+                    <div class="col-12"><p class="text-uppercase text-muted small fw-semibold mb-2">Channels</p><div class="d-flex flex-wrap gap-2">{% for channel in campaign_strategy.recommended_channels %}<span class="badge rounded-pill text-bg-primary">{{ channel }}</span>{% endfor %}</div></div>
+                    <div class="col-12"><p class="text-uppercase text-muted small fw-semibold mb-1">Summary</p><p class="mb-0">{{ campaign_strategy.campaign_summary }}</p></div>
+                </div>
+            </div>
+        </article>
+        {% endif %}
+
         <article class="card border-0 shadow-sm h-100 result-card">
             <div class="card-header bg-primary text-white py-3">
                 <h2 class="h4 mb-0">Generated Marketing Content</h2>

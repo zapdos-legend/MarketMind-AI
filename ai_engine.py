@@ -14,6 +14,8 @@ import re
 import urllib.error
 import urllib.request
 
+import campaign_engine
+
 
 OPENAI_API_URL = "https://api.openai.com/v1/responses"
 DEFAULT_MODEL = "gpt-4.1-mini"
@@ -63,6 +65,16 @@ def _extract_detail(prompt: str, label: str) -> str:
     return ""
 
 
+
+def _extract_strategy_detail(prompt: str, label: str) -> str:
+    """Return a campaign strategy detail from the prompt, if present."""
+    prefix = f"- {label}:"
+    for line in prompt.splitlines():
+        if line.startswith(prefix):
+            return line.removeprefix(prefix).strip()
+    return ""
+
+
 def _fallback_context(prompt: str) -> dict[str, str]:
     """Build reusable context values for local content generation."""
     topic = _extract_topic(prompt)
@@ -73,16 +85,27 @@ def _fallback_context(prompt: str) -> dict[str, str]:
     tone = _extract_detail(prompt, "Tone")
     offer = _extract_detail(prompt, "Offer/promotion")
 
+    strategy_audience = _extract_strategy_detail(prompt, "Audience")
+    strategy_offer = _extract_strategy_detail(prompt, "Offer")
+    strategy_tone = _extract_strategy_detail(prompt, "Tone")
+    strategy_cta = _extract_strategy_detail(prompt, "CTA")
+    strategy_message = _extract_strategy_detail(prompt, "Marketing Message")
+    strategy_value = _extract_strategy_detail(prompt, "Value Proposition")
+    strategy_pains = _extract_strategy_detail(prompt, "Pain Points")
     brand = business_name or product_service or "MarketMind AI"
 
     return {
         "topic": topic,
         "brand": brand,
         "product_service": product_service,
-        "audience": audience,
+        "audience": strategy_audience or audience,
         "platform": platform,
-        "tone": tone,
-        "offer": offer,
+        "tone": strategy_tone or tone,
+        "offer": strategy_offer or offer,
+        "strategy_cta": strategy_cta,
+        "strategy_message": strategy_message,
+        "strategy_value": strategy_value,
+        "strategy_pains": strategy_pains,
     }
 
 
@@ -209,11 +232,15 @@ def _local_fallback(prompt: str, reason: str | None = None) -> str:
     offer = context["offer"]
     platform = context["platform"]
     tone = context["tone"]
-    headline = generate_headline(topic, brand, audience, offer)
+    strategy_cta = context.get("strategy_cta", "")
+    strategy_message = context.get("strategy_message", "")
+    strategy_value = context.get("strategy_value", "")
+    strategy_pains = context.get("strategy_pains", "")
+    headline = strategy_message.upper() if strategy_message else generate_headline(topic, brand, audience, offer)
     if content_type == "Poster":
         headline = generate_headline(topic, brand, audience, "")
-    subheadline = generate_subheadline(topic, brand, audience, offer)
-    cta = generate_cta(topic, offer, content_type)
+    subheadline = strategy_value or generate_subheadline(topic, brand, audience, offer)
+    cta = strategy_cta or generate_cta(topic, offer, content_type)
     benefits = generate_benefits(topic, audience)
     offer_copy = generate_offer_copy(topic, offer)
     note = f"\n\nNote: Using local fallback because {reason}." if reason else ""
@@ -306,20 +333,39 @@ Layout / Visual Direction
 {_visual_guidance(content_type)} Do not generate an actual image.{note}"""
 
     if content_type == "AI Marketing Pack":
-        hashtags = _hashtags(brand, topic, audience)
-        return f"""Campaign Idea
-Lead with \"{headline}\" and turn the offer into a clear reason to act now.
+        strategy = {"primary_cta": cta, "offer_strategy": offer, "category": _detect_category(topic, audience)}
+        ctas = "\n".join(f"- {item}" for item in campaign_engine.cta_variations(strategy))
+        hashtags = " ".join(campaign_engine.hashtag_suggestions(strategy))
+        return f"""Campaign Strategy
+Objective: {_extract_strategy_detail(prompt, "Objective") or "Drive measurable campaign action"}
+Audience: {audience}
+Pain Points: {strategy_pains or "; ".join(generate_benefits(topic, audience))}
+Value Proposition: {subheadline}
+Marketing Message: {strategy_message or headline}
+Offer: {offer_copy}
+CTA: {cta}
 
-Poster Copy
+Marketing Copy
+Headline: {headline}
+Body Copy: {subheadline} {offer_copy}
+CTA: {cta}
+
+Poster
 Brand: {brand.upper()}
 Headline: {headline}
 Subheadline: {subheadline}
 Benefits: {', '.join(benefits)}
 CTA: {cta}
 
-Banner Copy
+Banner
 Headline: {headline}
 Supporting copy: {subheadline}
+CTA: {cta}
+
+Pamphlet
+Introduction: {subheadline}
+Benefits: {', '.join(benefits)}
+Offer: {offer_copy}
 CTA: {cta}
 
 Social Caption
@@ -327,11 +373,11 @@ Hook: {headline}
 Body: {subheadline} {offer_copy}
 CTA: {cta}.
 
-Hashtags
-{hashtags}
+CTA Variations
+{ctas}
 
-CTA
-{cta}{note}"""
+Hashtag Suggestions
+{hashtags}{note}"""
 
     return f"""Headline
 {headline}
