@@ -187,9 +187,11 @@ def _render_asset_html(content_type: str, result: str, form_data: dict[str, str]
     cta_options = [str(item) for item in creative_strategy.get("cta_options", []) if str(item).strip()] if isinstance(creative_strategy.get("cta_options"), list) else []
     offer = _safe_asset_text(creative_strategy.get("offer_framing") or strategy.get("offer_strategy") or form_data.get("offer"), "Limited-time offer")
     audience = _safe_asset_text(strategy.get("target_audience") or form_data.get("audience"), "your audience")
-    fallback_headline = creative_strategy.get("primary_hook") or (headline_options[0] if headline_options else _first_non_empty_line(result))
-    if content_type == "Banner" and headline_options:
-        fallback_headline = min(headline_options, key=len)
+    fallback_headline = (
+        creative_strategy.get("primary_hook")
+        or (headline_options[0] if headline_options else "")
+        or _first_non_empty_line(result)
+    )
     if content_type == "Pamphlet":
         fallback_headline = creative_strategy.get("campaign_concept") or fallback_headline
     headline = _safe_asset_text(fallback_headline or _extract_label_value(result, ("Headline", "Title"), _first_non_empty_line(result)))
