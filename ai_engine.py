@@ -171,7 +171,7 @@ def generate_headline(topic: str, brand: str = "", audience: str = "", offer: st
     if offer_match:
         return offer_match.group(1).strip().upper()
     if category == "fitness":
-        return "GET FIT. STAY FOCUSED."
+        return "START STRONG THIS WEEK"
     if category == "food" and _is_offer(topic, offer):
         return "50% OFF PIZZA THIS WEEKEND" if "50" in f"{topic} {offer}" else "FRESH DEALS. HOT FLAVOR."
     if category == "education":
@@ -398,7 +398,7 @@ Benefits: {', '.join(benefits)}
 CTA: {cta}
 
 Banner
-Headline: {(min(headline_options, key=len) if headline_options else headline)}
+Headline: {primary_hook or headline}
 Supporting copy: {subheadline}
 CTA: {cta}
 
