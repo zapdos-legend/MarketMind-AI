@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import campaign_engine
+
 
 SUPPORTED_CONTENT_TYPES = {
     "Marketing Text",
@@ -45,8 +47,9 @@ CONTENT_TYPE_INSTRUCTIONS = {
         "features, offer, CTA, contact section, and layout or visual direction."
     ),
     "AI Marketing Pack": (
-        "Create a complete AI marketing pack with: campaign idea, poster copy, "
-        "banner copy, social caption, hashtags, and CTA."
+        "Create a complete AI marketing pack 2.0 with: campaign strategy, "
+        "marketing copy, poster copy, banner copy, pamphlet copy, social caption, "
+        "CTA variations, and hashtag suggestions."
     ),
 }
 
@@ -90,14 +93,16 @@ def _format_optional_details(form_data: dict[str, object]) -> str:
     return "\n".join(details)
 
 
-def build_prompt(form_data: dict) -> str:
-    """Build a marketing content prompt from submitted form data."""
+def build_prompt(form_data: dict, strategy: dict | None = None) -> str:
+    """Build a marketing content prompt from submitted form data and strategy."""
     if not isinstance(form_data, dict):
         form_data = {}
 
     content_type = _normalize_content_type(form_data.get("content_type"))
     topic = _clean_value(form_data.get("topic"), "the submitted marketing topic")
     optional_details = _format_optional_details(form_data)
+    campaign_strategy = strategy or form_data.get("campaign_strategy") or campaign_engine.build_campaign_strategy(form_data)
+    strategy_details = campaign_engine.format_strategy_for_prompt(campaign_strategy)
     primary_instruction = CONTENT_TYPE_INSTRUCTIONS[content_type]
 
     sections = [
@@ -105,6 +110,9 @@ def build_prompt(form_data: dict) -> str:
         "",
         "User-provided details:",
         optional_details,
+        "",
+        "Campaign strategy (use this as the source of truth before generating content):",
+        strategy_details,
         "",
         "Primary task:",
         primary_instruction,
@@ -125,12 +133,14 @@ def build_prompt(form_data: dict) -> str:
             [
                 "",
                 "Required pack sections:",
-                "1. Campaign idea",
-                "2. Poster copy",
-                "3. Banner copy",
-                "4. Social caption",
-                "5. Hashtags",
-                "6. Call to action",
+                "1. Campaign Strategy",
+                "2. Marketing Copy",
+                "3. Poster",
+                "4. Banner",
+                "5. Pamphlet",
+                "6. Social Caption",
+                "7. CTA Variations (exactly 5)",
+                "8. Hashtag Suggestions (10-15)",
             ]
         )
 
@@ -138,7 +148,8 @@ def build_prompt(form_data: dict) -> str:
         [
             "",
             "General guidance:",
-            "- Use only optional details that were provided by the user.",
+            "- Generate from the campaign strategy first, not directly from the raw user prompt.",
+            "- Use optional user details only to clarify or constrain the campaign strategy.",
             "- Keep the output practical, polished, and ready to adapt for a "
             "real marketing campaign.",
             "- Lead with benefits, audience relevance, emotional hooks, urgency "
