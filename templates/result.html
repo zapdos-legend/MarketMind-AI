@@ -35,6 +35,25 @@
         </article>
         {% endif %}
 
+        {% if creative_strategy %}
+        <article class="card border-0 shadow-sm mb-4 result-card">
+            <div class="card-header bg-primary text-white py-3">
+                <h2 class="h4 mb-0">Creative Strategy</h2>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <div class="row g-3">
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Campaign Concept</p><p class="fw-semibold mb-0">{{ creative_strategy.campaign_concept }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Creative Angle</p><p class="mb-0">{{ creative_strategy.creative_angle }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Emotional Trigger</p><p class="mb-0">{{ creative_strategy.emotional_trigger }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Primary Hook</p><p class="fw-semibold mb-0">{{ creative_strategy.primary_hook }}</p></div>
+                    <div class="col-12"><p class="text-uppercase text-muted small fw-semibold mb-2">Headline Options</p><ol class="mb-0">{% for headline in creative_strategy.headline_options %}<li>{{ headline }}</li>{% endfor %}</ol></div>
+                    <div class="col-12"><p class="text-uppercase text-muted small fw-semibold mb-1">Visual Direction</p><p class="mb-0">{{ creative_strategy.visual_direction }}</p></div>
+                    <div class="col-12"><p class="text-uppercase text-muted small fw-semibold mb-2">CTA Options</p><div class="d-flex flex-wrap gap-2">{% for cta in creative_strategy.cta_options %}<span class="badge rounded-pill text-bg-dark">{{ cta }}</span>{% endfor %}</div></div>
+                </div>
+            </div>
+        </article>
+        {% endif %}
+
         <article class="card border-0 shadow-sm h-100 result-card">
             <div class="card-header bg-primary text-white py-3">
                 <h2 class="h4 mb-0">Generated Marketing Content</h2>

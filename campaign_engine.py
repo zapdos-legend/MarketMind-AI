@@ -161,7 +161,7 @@ def build_campaign_strategy(form_data: dict[str, Any]) -> dict[str, Any]:
         "technology": "A faster, simpler way to get the job done",
     }.get(category, f"A practical solution that helps {audience} get better results")
     message = {
-        "food": "Hot, fresh favorites at a value customers can say yes to",
+        "food": "Hot, fresh favorites at a price that makes weekend ordering easy",
         "fitness": "Fitness that fits your lifestyle",
         "education": "Focused preparation for confident performance",
         "beauty": "Glow with confidence every day",
@@ -210,7 +210,7 @@ def format_strategy_for_prompt(strategy: dict[str, Any]) -> str:
 def cta_variations(strategy: dict[str, Any]) -> list[str]:
     primary = _clean(strategy.get("primary_cta"), "Get Started Today")
     offer = _clean(strategy.get("offer_strategy"), "")
-    base = [primary, "Start Today", "Get Started Now", "Claim Your Offer", "Unlock Your Potential"]
+    base = [primary, "Start Today", "Get Started Now", "Claim Your Offer", "See What You Can Do"]
     if "trial" in offer.lower():
         base[3] = "Claim Your Free Trial"
     if "demo" in offer.lower():
