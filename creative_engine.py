@@ -112,7 +112,7 @@ def build_creative_strategy(form_data: dict[str, Any], campaign_strategy: dict[s
         imagery = "Audience-relevant lifestyle image, product/service cue, proof points, and a clear CTA button."
         ctas = [cta, "Claim Your Offer", "Start Today", "See How It Works", "Get Started"]
 
-    offer_framing = offer if offer == primary_hook else f"{offer} — positioned as the reason to act now."
+    offer_framing = offer if offer else primary_hook
     return {
         "campaign_concept": concept,
         "creative_angle": angle,

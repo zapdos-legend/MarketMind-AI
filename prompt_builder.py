@@ -166,6 +166,10 @@ def build_prompt(form_data: dict, strategy: dict | None = None, creative_strateg
             "'Make [prompt] easier', or generic AI filler.",
             "- Match the requested tone and platform when those details are "
             "provided.",
+            "- Keep strategy-layer terms out of final customer-facing asset copy: "
+            "do not display positioned as, emotional trigger, campaign concept, "
+            "creative angle, marketing message, offer framing, strategically "
+            "framed, or reason to act now.",
         ]
     )
 
