@@ -101,6 +101,12 @@ def _fallback_context(prompt: str) -> dict[str, str]:
     imagery_direction = _extract_strategy_detail(prompt, "Imagery Direction")
     campaign_concept = _extract_strategy_detail(prompt, "Campaign Concept")
     creative_angle = _extract_strategy_detail(prompt, "Creative Angle")
+    design_concept = _extract_strategy_detail(prompt, "Design Concept")
+    layout_type = _extract_strategy_detail(prompt, "Layout Type")
+    typography_style = _extract_strategy_detail(prompt, "Typography Style")
+    color_palette = _extract_strategy_detail(prompt, "Color Palette")
+    design_hierarchy = _extract_strategy_detail(prompt, "Visual Hierarchy")
+    image_direction = _extract_strategy_detail(prompt, "Image Direction")
     brand = business_name or product_service or "MarketMind AI"
 
     return {
@@ -124,6 +130,12 @@ def _fallback_context(prompt: str) -> dict[str, str]:
         "imagery_direction": imagery_direction,
         "campaign_concept": campaign_concept,
         "creative_angle": creative_angle,
+        "design_concept": design_concept,
+        "layout_type": layout_type,
+        "typography_style": typography_style,
+        "color_palette": color_palette,
+        "design_hierarchy": design_hierarchy,
+        "image_direction": image_direction,
     }
 
 
@@ -268,6 +280,12 @@ def _local_fallback(prompt: str, reason: str | None = None) -> str:
     imagery_direction = context.get("imagery_direction", "")
     campaign_concept = context.get("campaign_concept", "")
     creative_angle = context.get("creative_angle", "")
+    design_concept = context.get("design_concept", "")
+    layout_type = context.get("layout_type", "")
+    typography_style = context.get("typography_style", "")
+    color_palette = context.get("color_palette", "")
+    design_hierarchy = context.get("design_hierarchy", "")
+    image_direction = context.get("image_direction", "")
     headline = primary_hook or (headline_options[0] if headline_options else "") or (strategy_message.upper() if strategy_message else generate_headline(topic, brand, audience, offer))
     if content_type == "Poster" and primary_hook:
         headline = primary_hook
@@ -384,6 +402,14 @@ Primary Hook: {primary_hook or headline}
 Headline Options: {"; ".join(headline_options) or headline}
 Visual Direction: {visual_direction or _visual_guidance("Poster")}
 CTA Options: {"; ".join(cta_options) or cta}
+
+Design Strategy
+Design Concept: {design_concept or "Clean modern commercial campaign"}
+Layout Type: {layout_type or "Conversion-focused marketing layout"}
+Typography Style: {typography_style or "Bold modern headline with readable support copy"}
+Color Palette: {color_palette or "Brand-led accent palette with accessible contrast"}
+Visual Hierarchy: {design_hierarchy or "Headline; offer; benefits; CTA"}
+Image Direction: {image_direction or visual_direction or _visual_guidance("Poster")}
 
 Marketing Copy
 Headline: {headline}

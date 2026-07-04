@@ -54,6 +54,25 @@
         </article>
         {% endif %}
 
+
+        {% if design_strategy %}
+        <article class="card border-0 shadow-sm mb-4 result-card">
+            <div class="card-header bg-dark text-white py-3">
+                <h2 class="h4 mb-0">Design Strategy</h2>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <div class="row g-3">
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Design Concept</p><p class="fw-semibold mb-0">{{ design_strategy.design_concept }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Layout Type</p><p class="mb-0">{{ design_strategy.layout_type }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Typography Style</p><p class="mb-0">{{ design_strategy.typography_style }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Color Palette</p><p class="mb-0">{{ design_strategy.color_palette | join(', ') }}</p></div>
+                    <div class="col-12"><p class="text-uppercase text-muted small fw-semibold mb-2">Visual Hierarchy</p><ol class="mb-0">{% for item in design_strategy.visual_hierarchy %}<li>{{ item }}</li>{% endfor %}</ol></div>
+                    <div class="col-12"><p class="text-uppercase text-muted small fw-semibold mb-1">Image Direction</p><p class="mb-0">{{ design_strategy.image_direction }}</p></div>
+                </div>
+            </div>
+        </article>
+        {% endif %}
+
         <article class="card border-0 shadow-sm h-100 result-card">
             <div class="card-header bg-primary text-white py-3">
                 <h2 class="h4 mb-0">Generated Marketing Content</h2>
