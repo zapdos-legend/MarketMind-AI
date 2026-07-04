@@ -5,6 +5,7 @@ from __future__ import annotations
 import campaign_engine
 import creative_engine
 import design_engine
+import asset_composer
 
 
 SUPPORTED_CONTENT_TYPES = {
@@ -95,7 +96,7 @@ def _format_optional_details(form_data: dict[str, object]) -> str:
     return "\n".join(details)
 
 
-def build_prompt(form_data: dict, strategy: dict | None = None, creative_strategy: dict | None = None, design_strategy: dict | None = None) -> str:
+def build_prompt(form_data: dict, strategy: dict | None = None, creative_strategy: dict | None = None, design_strategy: dict | None = None, composition_strategy: dict | None = None) -> str:
     """Build a marketing content prompt from submitted form data and strategy."""
     if not isinstance(form_data, dict):
         form_data = {}
@@ -109,6 +110,8 @@ def build_prompt(form_data: dict, strategy: dict | None = None, creative_strateg
     creative_details = creative_engine.format_creative_for_prompt(creative)
     design = design_strategy or form_data.get("design_strategy") or design_engine.build_design_strategy(form_data, campaign_strategy, creative)
     design_details = design_engine.format_design_for_prompt(design)
+    composition = composition_strategy or form_data.get("composition_strategy") or asset_composer.build_asset_composition(form_data, campaign_strategy, creative, design)
+    composition_details = asset_composer.format_composition_for_prompt(composition)
     primary_instruction = CONTENT_TYPE_INSTRUCTIONS[content_type]
 
     sections = [
@@ -125,6 +128,9 @@ def build_prompt(form_data: dict, strategy: dict | None = None, creative_strateg
         "",
         "Design strategy (use this as how the assets should look visually, including hierarchy, layout, typography, color, imagery, and composition):",
         design_details,
+        "",
+        "Asset composition strategy (use this to arrange zones and create a visibly distinct professional layout):",
+        composition_details,
         "",
         "Primary task:",
         primary_instruction,
@@ -162,7 +168,7 @@ def build_prompt(form_data: dict, strategy: dict | None = None, creative_strateg
         [
             "",
             "General guidance:",
-            "- Generate from the campaign strategy first, express it through the creative strategy, then shape visual outputs through the design strategy.",
+            "- Generate from the campaign strategy first, express it through the creative strategy, then shape visual outputs through the design strategy and asset composition strategy.",
             "- Use optional user details only to clarify or constrain the campaign strategy.",
             "- Keep the output practical, polished, and ready to adapt for a "
             "real marketing campaign.",
@@ -176,7 +182,7 @@ def build_prompt(form_data: dict, strategy: dict | None = None, creative_strateg
             "- Keep strategy-layer terms out of final customer-facing asset copy: "
             "do not display positioned as, emotional trigger, campaign concept, "
             "creative angle, marketing message, offer framing, strategically "
-            "framed, or reason to act now.",
+            "framed, layout family, composition name, engine names, or reason to act now.",
         ]
     )
 

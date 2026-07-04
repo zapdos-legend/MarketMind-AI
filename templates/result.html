@@ -73,6 +73,27 @@
         </article>
         {% endif %}
 
+
+        {% if composition_strategy %}
+        <article class="card border-0 shadow-sm mb-4 result-card">
+            <div class="card-header bg-secondary text-white py-3">
+                <h2 class="h4 mb-0">Asset Composition Strategy</h2>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <div class="row g-3">
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Composition Name</p><p class="fw-semibold mb-0">{{ composition_strategy.composition_name }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Layout Family</p><p class="mb-0">{{ composition_strategy.layout_family }}</p></div>
+                    <div class="col-12"><p class="text-uppercase text-muted small fw-semibold mb-1">Visual Structure</p><p class="mb-0">{{ composition_strategy.visual_structure }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Hero Zone</p><p class="mb-0">{{ composition_strategy.hero_zone }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Offer Zone</p><p class="mb-0">{{ composition_strategy.offer_zone }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">CTA Zone</p><p class="mb-0">{{ composition_strategy.cta_zone }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-2">Decorative Elements</p><div class="d-flex flex-wrap gap-2">{% for item in composition_strategy.decorative_elements %}<span class="badge rounded-pill text-bg-light border">{{ item }}</span>{% endfor %}</div></div>
+                    <div class="col-12"><p class="text-uppercase text-muted small fw-semibold mb-1">Asset Notes</p><p class="mb-0">{{ composition_strategy.asset_specific_notes }}</p></div>
+                </div>
+            </div>
+        </article>
+        {% endif %}
+
         <article class="card border-0 shadow-sm h-100 result-card">
             <div class="card-header bg-primary text-white py-3">
                 <h2 class="h4 mb-0">Generated Marketing Content</h2>

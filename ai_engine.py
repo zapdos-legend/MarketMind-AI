@@ -107,6 +107,9 @@ def _fallback_context(prompt: str) -> dict[str, str]:
     color_palette = _extract_strategy_detail(prompt, "Color Palette")
     design_hierarchy = _extract_strategy_detail(prompt, "Visual Hierarchy")
     image_direction = _extract_strategy_detail(prompt, "Image Direction")
+    layout_family = _extract_strategy_detail(prompt, "Layout Family")
+    visual_structure = _extract_strategy_detail(prompt, "Visual Structure")
+    asset_specific_notes = _extract_strategy_detail(prompt, "Asset Specific Notes")
     brand = business_name or product_service or "MarketMind AI"
 
     return {
@@ -136,6 +139,9 @@ def _fallback_context(prompt: str) -> dict[str, str]:
         "color_palette": color_palette,
         "design_hierarchy": design_hierarchy,
         "image_direction": image_direction,
+        "layout_family": layout_family,
+        "visual_structure": visual_structure,
+        "asset_specific_notes": asset_specific_notes,
     }
 
 
@@ -286,6 +292,9 @@ def _local_fallback(prompt: str, reason: str | None = None) -> str:
     color_palette = context.get("color_palette", "")
     design_hierarchy = context.get("design_hierarchy", "")
     image_direction = context.get("image_direction", "")
+    layout_family = context.get("layout_family", "")
+    visual_structure = context.get("visual_structure", "")
+    asset_specific_notes = context.get("asset_specific_notes", "")
     headline = primary_hook or (headline_options[0] if headline_options else "") or (strategy_message.upper() if strategy_message else generate_headline(topic, brand, audience, offer))
     if content_type == "Poster" and primary_hook:
         headline = primary_hook
@@ -345,7 +354,7 @@ CTA: {cta}
 Offer: {offer_copy}
 
 Layout / Visual Direction
-{(visual_direction + " " + imagery_direction).strip() or _visual_guidance(content_type)} Do not generate an actual image.{note}"""
+{(visual_direction + " " + imagery_direction + " " + visual_structure + " " + asset_specific_notes).strip() or _visual_guidance(content_type)} Do not generate an actual image.{note}"""
 
     if content_type == "Banner":
         return f"""Banner Copy
@@ -354,7 +363,7 @@ Supporting copy: {subheadline}
 CTA: {cta}
 
 Layout / Visual Direction
-{(visual_direction + " " + imagery_direction).strip() or _visual_guidance(content_type)} Do not generate an actual image.{note}"""
+{(visual_direction + " " + imagery_direction + " " + visual_structure + " " + asset_specific_notes).strip() or _visual_guidance(content_type)} Do not generate an actual image.{note}"""
 
     if content_type == "Pamphlet":
         return f"""Pamphlet Copy
@@ -380,7 +389,7 @@ Contact Section:
 Contact {brand} today to learn more, ask questions, and reserve your spot.
 
 Layout / Visual Direction
-{(visual_direction + " " + imagery_direction).strip() or _visual_guidance(content_type)} Do not generate an actual image.{note}"""
+{(visual_direction + " " + imagery_direction + " " + visual_structure + " " + asset_specific_notes).strip() or _visual_guidance(content_type)} Do not generate an actual image.{note}"""
 
     if content_type == "AI Marketing Pack":
         strategy = {"primary_cta": cta, "offer_strategy": offer, "category": _detect_category(topic, audience)}
@@ -410,6 +419,7 @@ Typography Style: {typography_style or "Bold modern headline with readable suppo
 Color Palette: {color_palette or "Brand-led accent palette with accessible contrast"}
 Visual Hierarchy: {design_hierarchy or "Headline; offer; benefits; CTA"}
 Image Direction: {image_direction or visual_direction or _visual_guidance("Poster")}
+Asset Composition: {visual_structure or layout_family or "Professional conversion layout"}
 
 Marketing Copy
 Headline: {headline}
