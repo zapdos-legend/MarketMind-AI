@@ -230,10 +230,10 @@ def generate_cta(topic: str, offer: str = "", content_type: str = "") -> str:
 def generate_offer_copy(topic: str, offer: str = "") -> str:
     """Generate urgency and offer copy without inventing when no offer exists."""
     if offer:
-        return f"Offer: {offer}. Grab it while it is fresh."
+        return offer
     if _is_offer(topic):
-        return f"Offer: {_title_case_phrase(topic)}. Available for a limited time."
-    return "Offer: Ask about current packages, pricing, and launch specials."
+        return _title_case_phrase(topic)
+    return "Ask about current packages, pricing, and launch specials."
 
 
 def _visual_guidance(content_type: str) -> str:
@@ -308,7 +308,7 @@ CTA: {cta}.{note}"""
         hashtags = _hashtags(brand, topic, audience)
         return f"""Hook: {headline}
 
-Body: {subheadline} {offer_copy}
+Body: {subheadline} Offer: {offer_copy}
 
 CTA: {cta}.
 
@@ -373,13 +373,13 @@ Objective: {_extract_strategy_detail(prompt, "Objective") or "Drive measurable c
 Audience: {audience}
 Pain Points: {strategy_pains or "; ".join(generate_benefits(topic, audience))}
 Value Proposition: {subheadline}
-Marketing Message: {strategy_message or headline}
+Core Message: {strategy_message or headline}
 Offer: {offer_copy}
 CTA: {cta}
 
 Creative Strategy
-Campaign Concept: {campaign_concept or headline}
-Creative Angle: {creative_angle or subheadline}
+Big Idea: {campaign_concept or headline}
+Customer Angle: {creative_angle or subheadline}
 Primary Hook: {primary_hook or headline}
 Headline Options: {"; ".join(headline_options) or headline}
 Visual Direction: {visual_direction or _visual_guidance("Poster")}
@@ -411,7 +411,7 @@ CTA: {cta}
 
 Social Caption
 Hook: {headline}
-Body: {subheadline} {offer_copy}
+Body: {subheadline} Offer: {offer_copy}
 CTA: {cta}.
 
 CTA Variations
