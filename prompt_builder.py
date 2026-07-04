@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import campaign_engine
 import creative_engine
+import design_engine
 
 
 SUPPORTED_CONTENT_TYPES = {
@@ -49,7 +50,7 @@ CONTENT_TYPE_INSTRUCTIONS = {
     ),
     "AI Marketing Pack": (
         "Create a complete AI marketing pack 2.0 with: campaign strategy, "
-        "creative strategy, marketing copy, poster copy, banner copy, pamphlet copy, social caption, "
+        "creative strategy, design strategy, marketing copy, poster copy, banner copy, pamphlet copy, social caption, "
         "CTA variations, and hashtag suggestions."
     ),
 }
@@ -94,7 +95,7 @@ def _format_optional_details(form_data: dict[str, object]) -> str:
     return "\n".join(details)
 
 
-def build_prompt(form_data: dict, strategy: dict | None = None, creative_strategy: dict | None = None) -> str:
+def build_prompt(form_data: dict, strategy: dict | None = None, creative_strategy: dict | None = None, design_strategy: dict | None = None) -> str:
     """Build a marketing content prompt from submitted form data and strategy."""
     if not isinstance(form_data, dict):
         form_data = {}
@@ -106,6 +107,8 @@ def build_prompt(form_data: dict, strategy: dict | None = None, creative_strateg
     strategy_details = campaign_engine.format_strategy_for_prompt(campaign_strategy)
     creative = creative_strategy or form_data.get("creative_strategy") or creative_engine.build_creative_strategy(form_data, campaign_strategy)
     creative_details = creative_engine.format_creative_for_prompt(creative)
+    design = design_strategy or form_data.get("design_strategy") or design_engine.build_design_strategy(form_data, campaign_strategy, creative)
+    design_details = design_engine.format_design_for_prompt(design)
     primary_instruction = CONTENT_TYPE_INSTRUCTIONS[content_type]
 
     sections = [
@@ -117,8 +120,11 @@ def build_prompt(form_data: dict, strategy: dict | None = None, creative_strateg
         "Campaign strategy (use this as the source of truth before generating content):",
         strategy_details,
         "",
-        "Creative strategy (use this as the creative direction for hooks, angles, visuals, and CTAs):",
+        "Creative strategy (use this as how to say the campaign through hooks, angles, visuals, and CTAs):",
         creative_details,
+        "",
+        "Design strategy (use this as how the assets should look visually, including hierarchy, layout, typography, color, imagery, and composition):",
+        design_details,
         "",
         "Primary task:",
         primary_instruction,
@@ -141,13 +147,14 @@ def build_prompt(form_data: dict, strategy: dict | None = None, creative_strateg
                 "Required pack sections:",
                 "1. Campaign Strategy",
                 "2. Creative Strategy",
-                "3. Marketing Copy",
-                "4. Poster",
-                "5. Banner",
-                "6. Pamphlet",
-                "7. Social Caption",
-                "8. CTA Variations (exactly 5)",
-                "9. Hashtag Suggestions (10-15)",
+                "3. Design Strategy",
+                "4. Marketing Copy",
+                "5. Poster",
+                "6. Banner",
+                "7. Pamphlet",
+                "8. Social Caption",
+                "9. CTA Variations (exactly 5)",
+                "10. Hashtag Suggestions (10-15)",
             ]
         )
 
@@ -155,7 +162,7 @@ def build_prompt(form_data: dict, strategy: dict | None = None, creative_strateg
         [
             "",
             "General guidance:",
-            "- Generate from the campaign strategy first, then execute through the creative strategy direction.",
+            "- Generate from the campaign strategy first, express it through the creative strategy, then shape visual outputs through the design strategy.",
             "- Use optional user details only to clarify or constrain the campaign strategy.",
             "- Keep the output practical, polished, and ready to adapt for a "
             "real marketing campaign.",
