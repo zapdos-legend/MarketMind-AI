@@ -7,6 +7,7 @@ import creative_engine
 import design_engine
 import asset_composer
 import visual_components
+import industry_engine
 
 
 SUPPORTED_CONTENT_TYPES = {
@@ -97,7 +98,7 @@ def _format_optional_details(form_data: dict[str, object]) -> str:
     return "\n".join(details)
 
 
-def build_prompt(form_data: dict, strategy: dict | None = None, creative_strategy: dict | None = None, design_strategy: dict | None = None, composition_strategy: dict | None = None, visual_component_strategy: dict | None = None) -> str:
+def build_prompt(form_data: dict, strategy: dict | None = None, creative_strategy: dict | None = None, design_strategy: dict | None = None, composition_strategy: dict | None = None, visual_component_strategy: dict | None = None, industry_alignment: dict | None = None) -> str:
     """Build a marketing content prompt from submitted form data and strategy."""
     if not isinstance(form_data, dict):
         form_data = {}
@@ -105,15 +106,17 @@ def build_prompt(form_data: dict, strategy: dict | None = None, creative_strateg
     content_type = _normalize_content_type(form_data.get("content_type"))
     topic = _clean_value(form_data.get("topic"), "the submitted marketing topic")
     optional_details = _format_optional_details(form_data)
-    campaign_strategy = strategy or form_data.get("campaign_strategy") or campaign_engine.build_campaign_strategy(form_data)
+    alignment = industry_alignment or form_data.get("industry_alignment") or industry_engine.build_industry_alignment(form_data)
+    industry_details = industry_engine.format_industry_for_prompt(alignment)
+    campaign_strategy = strategy or form_data.get("campaign_strategy") or campaign_engine.build_campaign_strategy(form_data, alignment)
     strategy_details = campaign_engine.format_strategy_for_prompt(campaign_strategy)
-    creative = creative_strategy or form_data.get("creative_strategy") or creative_engine.build_creative_strategy(form_data, campaign_strategy)
+    creative = creative_strategy or form_data.get("creative_strategy") or creative_engine.build_creative_strategy(form_data, campaign_strategy, alignment)
     creative_details = creative_engine.format_creative_for_prompt(creative)
-    design = design_strategy or form_data.get("design_strategy") or design_engine.build_design_strategy(form_data, campaign_strategy, creative)
+    design = design_strategy or form_data.get("design_strategy") or design_engine.build_design_strategy(form_data, campaign_strategy, creative, alignment)
     design_details = design_engine.format_design_for_prompt(design)
-    composition = composition_strategy or form_data.get("composition_strategy") or asset_composer.build_asset_composition(form_data, campaign_strategy, creative, design)
+    composition = composition_strategy or form_data.get("composition_strategy") or asset_composer.build_asset_composition(form_data, campaign_strategy, creative, design, alignment)
     composition_details = asset_composer.format_composition_for_prompt(composition)
-    visual_components_strategy = visual_component_strategy or form_data.get("visual_component_strategy") or visual_components.build_visual_component_strategy(form_data, campaign_strategy, creative, design, composition)
+    visual_components_strategy = visual_component_strategy or form_data.get("visual_component_strategy") or visual_components.build_visual_component_strategy(form_data, campaign_strategy, creative, design, composition, alignment)
     visual_component_details = visual_components.format_visual_components_for_prompt(visual_components_strategy)
     primary_instruction = CONTENT_TYPE_INSTRUCTIONS[content_type]
 
@@ -122,6 +125,9 @@ def build_prompt(form_data: dict, strategy: dict | None = None, creative_strateg
         "",
         "User-provided details:",
         optional_details,
+        "",
+        "Industry Intelligence / Semantic Alignment (highest-priority source of truth; do not drift into unrelated industries):",
+        industry_details,
         "",
         "Campaign strategy (use this as the source of truth before generating content):",
         strategy_details,
@@ -174,7 +180,10 @@ def build_prompt(form_data: dict, strategy: dict | None = None, creative_strateg
         [
             "",
             "General guidance:",
-            "- Generate from the campaign strategy first, express it through the creative strategy, then shape visual outputs through the design strategy, asset composition strategy, and visual component strategy.",
+            "- Generate from the industry alignment first, then the campaign strategy, creative strategy, design strategy, asset composition strategy, and visual component strategy.",
+            "- Must-use semantic context: keep the product/service central; use allowed terms, allowed imagery, recommended benefits, and recommended CTA direction from industry alignment.",
+            "- Forbidden semantic context: do not use forbidden terms, forbidden CTAs, forbidden benefits, or forbidden imagery from industry alignment.",
+            "- Do not drift into unrelated industries even when fallback examples or generic defaults mention them.",
             "- Use optional user details only to clarify or constrain the campaign strategy.",
             "- Keep the output practical, polished, and ready to adapt for a "
             "real marketing campaign.",

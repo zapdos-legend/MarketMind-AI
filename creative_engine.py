@@ -11,6 +11,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
+import industry_engine
+
 CREATIVE_FIELDS = (
     "campaign_concept",
     "creative_angle",
@@ -64,7 +66,7 @@ def _offer_hook(offer: str) -> str:
     return "DON'T MISS THIS"
 
 
-def build_creative_strategy(form_data: dict[str, Any], campaign_strategy: dict[str, Any] | None = None) -> dict[str, Any]:
+def build_creative_strategy(form_data: dict[str, Any], campaign_strategy: dict[str, Any] | None = None, industry_alignment: dict[str, Any] | None = None) -> dict[str, Any]:
     """Build a structured creative strategy from form data and campaign strategy."""
     if not isinstance(form_data, dict):
         form_data = {}
@@ -76,9 +78,23 @@ def build_creative_strategy(form_data: dict[str, Any], campaign_strategy: dict[s
     cta = _clean(strategy.get("primary_cta"), "Get Started Today")
     value = _clean(strategy.get("value_proposition"), f"A timely offer for {audience}")
     text = _combined(form_data, strategy)
+    alignment = industry_alignment or industry_engine.build_industry_alignment(form_data)
+    industry = alignment.get("detected_industry", "generic_business")
     cat = _category(text, strategy)
-
-    if cat == "food":
+    if industry in {"healthcare", "real_estate", "cafe_food", "fitness_app", "edtech"}:
+        allowed = alignment.get("allowed_terms", [])
+        benefits = alignment.get("recommended_benefits", [])
+        ctas = alignment.get("recommended_ctas", [cta])
+        primary_hook = (offer.upper() if offer else (allowed[0].upper() if allowed else topic.upper()))
+        concept = f"{brand} {industry.replace('_', ' ').title()} Campaign"
+        angle = benefits[0] if benefits else value
+        trigger = alignment.get("tone_guidelines", "Relevance and urgency")
+        headlines = [primary_hook, (benefits[0] if benefits else value), f"{brand}: {allowed[0] if allowed else 'trusted value'}"]
+        subheads = [value, *(benefits[:2] or [f"Built for {audience}"])]
+        visual = alignment.get("visual_guidelines", "Use industry-aligned visuals.")
+        color = alignment.get("tone_guidelines", "Brand-aligned color palette")
+        imagery = "Use " + ", ".join(alignment.get("allowed_imagery", [])[:5]) + " and stay within the detected industry context."
+    elif cat == "food":
         concept = "Weekend Pizza Rush" if "weekend" in text or "pizza" in text else "Fresh Flavor Fast"
         angle = "Skip cooking and make the weekend feel easy, hot, and shareable."
         trigger = "Convenience, appetite, and urgency"
@@ -113,7 +129,7 @@ def build_creative_strategy(form_data: dict[str, Any], campaign_strategy: dict[s
         ctas = [cta, "Claim Your Offer", "Start Today", "See How It Works", "Get Started"]
 
     offer_framing = offer if offer else primary_hook
-    return {
+    result = {
         "campaign_concept": concept,
         "creative_angle": angle,
         "emotional_trigger": trigger,
@@ -132,6 +148,7 @@ def build_creative_strategy(form_data: dict[str, Any], campaign_strategy: dict[s
             "social_caption": "Open with the primary hook, keep the body conversational, and close with a direct CTA plus relevant hashtags.",
         },
     }
+    return industry_engine.validate_semantic_alignment(result, alignment)
 
 
 def format_creative_for_prompt(creative: dict[str, Any] | None) -> str:

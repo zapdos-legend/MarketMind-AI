@@ -14,6 +14,31 @@
 <div class="row g-4 align-items-start">
     <div class="col-12 col-lg-8">
 
+
+        {% if industry_alignment %}
+        <article class="card border-0 shadow-sm mb-4 result-card">
+            <div class="card-header bg-success text-white py-3">
+                <h2 class="h4 mb-0">Industry Intelligence / Semantic Alignment</h2>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <div class="row g-3">
+                    <div class="col-md-4"><p class="text-uppercase text-muted small fw-semibold mb-1">Detected Industry</p><p class="fw-semibold mb-0">{{ industry_alignment.detected_industry }}</p></div>
+                    <div class="col-md-4"><p class="text-uppercase text-muted small fw-semibold mb-1">Sub Industry</p><p class="mb-0">{{ industry_alignment.detected_sub_industry }}</p></div>
+                    <div class="col-md-4"><p class="text-uppercase text-muted small fw-semibold mb-1">Confidence</p><p class="mb-0">{{ industry_alignment.confidence_score }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Business Context</p><p class="mb-0">{{ industry_alignment.business_context_summary }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Product Context</p><p class="mb-0">{{ industry_alignment.product_context_summary }}</p></div>
+                    <div class="col-12"><p class="text-uppercase text-muted small fw-semibold mb-1">Campaign Intent</p><p class="mb-0">{{ industry_alignment.campaign_intent }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-2">Allowed Terms</p><div class="d-flex flex-wrap gap-2">{% for item in industry_alignment.allowed_terms %}<span class="badge rounded-pill text-bg-success">{{ item }}</span>{% endfor %}</div></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-2">Forbidden Terms</p><div class="d-flex flex-wrap gap-2">{% for item in industry_alignment.forbidden_terms %}<span class="badge rounded-pill text-bg-danger">{{ item }}</span>{% endfor %}</div></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-2">Allowed Imagery</p><div class="d-flex flex-wrap gap-2">{% for item in industry_alignment.allowed_imagery %}<span class="badge rounded-pill text-bg-light border">{{ item }}</span>{% endfor %}</div></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-2">Forbidden Imagery</p><div class="d-flex flex-wrap gap-2">{% for item in industry_alignment.forbidden_imagery %}<span class="badge rounded-pill text-bg-warning">{{ item }}</span>{% endfor %}</div></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-2">Recommended CTAs</p><div class="d-flex flex-wrap gap-2">{% for item in industry_alignment.recommended_ctas %}<span class="badge rounded-pill text-bg-primary">{{ item }}</span>{% endfor %}</div></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-2">Semantic Warnings</p>{% if industry_alignment.semantic_warnings %}<ul class="mb-0">{% for item in industry_alignment.semantic_warnings %}<li>{{ item }}</li>{% endfor %}</ul>{% else %}<p class="mb-0 text-muted">No semantic drift detected.</p>{% endif %}</div>
+                </div>
+            </div>
+        </article>
+        {% endif %}
+
         {% if campaign_strategy %}
         <article class="card border-0 shadow-sm mb-4 result-card">
             <div class="card-header bg-dark text-white py-3">
