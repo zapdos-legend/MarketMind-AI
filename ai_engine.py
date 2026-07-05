@@ -521,8 +521,13 @@ def _call_openai(prompt: str, api_key: str) -> str:
     raise ValueError("OpenAI response did not include usable text")
 
 
-def analyze(prompt: str) -> str:
-    """Generate marketing content using OpenAI when available, otherwise locally."""
+def analyze(prompt: str, visual_component_strategy: dict | None = None) -> str:
+    """Generate marketing content using OpenAI when available, otherwise locally.
+
+    visual_component_strategy is accepted by the Phase 7 pipeline so callers can
+    pass the selected component system through the AI layer without changing
+    older routes. The prompt remains the primary source of generation context.
+    """
     if not isinstance(prompt, str):
         return _local_fallback(str(prompt), "the prompt was not provided as text")
 

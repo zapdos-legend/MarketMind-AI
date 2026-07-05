@@ -94,6 +94,28 @@
         </article>
         {% endif %}
 
+
+        {% if visual_component_strategy %}
+        <article class="card border-0 shadow-sm mb-4 result-card">
+            <div class="card-header bg-info text-dark py-3">
+                <h2 class="h4 mb-0">Visual Component System</h2>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <div class="row g-3">
+                    <div class="col-12"><p class="text-uppercase text-muted small fw-semibold mb-1">Component System Name</p><p class="fw-semibold mb-0">{{ visual_component_strategy.component_system_name }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-2">Primary Components</p><div class="d-flex flex-wrap gap-2">{% for item in visual_component_strategy.primary_components %}<span class="badge rounded-pill text-bg-primary">{{ item }}</span>{% endfor %}</div></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-2">Secondary Components</p><div class="d-flex flex-wrap gap-2">{% for item in visual_component_strategy.secondary_components %}<span class="badge rounded-pill text-bg-secondary">{{ item }}</span>{% endfor %}</div></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-2">Conversion Components</p><div class="d-flex flex-wrap gap-2">{% for item in visual_component_strategy.conversion_components %}<span class="badge rounded-pill text-bg-success">{{ item }}</span>{% endfor %}</div></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-2">Trust Components</p><div class="d-flex flex-wrap gap-2">{% for item in visual_component_strategy.trust_components %}<span class="badge rounded-pill text-bg-light border">{{ item }}</span>{% endfor %}</div></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-2">Decorative Components</p><div class="d-flex flex-wrap gap-2">{% for item in visual_component_strategy.decorative_components %}<span class="badge rounded-pill text-bg-warning">{{ item }}</span>{% endfor %}</div></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-2">Industry Specific Components</p><div class="d-flex flex-wrap gap-2">{% for item in visual_component_strategy.industry_specific_components %}<span class="badge rounded-pill text-bg-dark">{{ item }}</span>{% endfor %}</div></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-2">Component Hierarchy</p><ol class="mb-0">{% for item in visual_component_strategy.component_hierarchy %}<li>{{ item }}</li>{% endfor %}</ol></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-2">Asset Specific Components</p><div class="d-flex flex-wrap gap-2">{% for item in visual_component_strategy.asset_specific_components %}<span class="badge rounded-pill text-bg-info">{{ item }}</span>{% endfor %}</div></div>
+                </div>
+            </div>
+        </article>
+        {% endif %}
+
         <article class="card border-0 shadow-sm h-100 result-card">
             <div class="card-header bg-primary text-white py-3">
                 <h2 class="h4 mb-0">Generated Marketing Content</h2>
