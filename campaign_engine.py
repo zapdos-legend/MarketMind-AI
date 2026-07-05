@@ -12,6 +12,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
+import industry_engine
+
 STRATEGY_FIELDS = (
     "campaign_objective",
     "target_audience",
@@ -50,6 +52,12 @@ def _category(text: str) -> str:
 
 
 def _infer_objective(topic: str, text: str, category: str) -> str:
+    if category == "healthcare":
+        return "Drive health checkup appointments and trusted community care participation"
+    if category == "real_estate":
+        return "Generate qualified site visit bookings for the property campaign"
+    if category == "event":
+        return "Generate registrations and attendance intent for the event"
     if "weekend" in text and category == "food":
         return "Increase weekend orders and in-store sales"
     if "launch" in text and ("app" in text or category == "technology"):
@@ -127,23 +135,29 @@ def _cta(category: str, text: str, offer: str) -> str:
     return "Get Started Today"
 
 
-def build_campaign_strategy(form_data: dict[str, Any]) -> dict[str, Any]:
+def build_campaign_strategy(form_data: dict[str, Any], industry_alignment: dict[str, Any] | None = None) -> dict[str, Any]:
     """Infer a complete campaign strategy from the submitted user brief."""
     if not isinstance(form_data, dict):
         form_data = {}
     topic = _clean(form_data.get("topic"), "the submitted marketing request")
     text = _combined(form_data)
-    category = _category(text)
+    alignment = industry_alignment or industry_engine.build_industry_alignment(form_data)
+    industry = alignment.get("detected_industry", "generic_business")
+    category_map = {"cafe_food": "food", "restaurant": "food", "fitness_app": "fitness", "edtech": "education", "beauty_skincare": "beauty", "saas": "technology", "ecommerce": "technology", "healthcare": "healthcare", "real_estate": "real_estate", "event_promotion": "event"}
+    category = category_map.get(industry, _category(text))
     audience = _infer_audience(form_data, text, category)
     pains = _pain_points(category, text)
     offer = _offer(form_data, category, text)
-    cta = _cta(category, text, offer)
+    cta = (alignment.get("recommended_ctas") or [])[0] if industry in {"healthcare", "real_estate", "cafe_food", "fitness_app", "edtech"} else _cta(category, text, offer)
     tone = _clean(form_data.get("tone")) or {
         "food": "Warm, urgent, and appetizing",
         "fitness": "Energetic and motivational",
         "education": "Encouraging, credible, and aspirational",
         "beauty": "Premium, confident, and reassuring",
         "technology": "Clear, modern, and benefit-led",
+        "healthcare": alignment.get("tone_guidelines", "Trustworthy and caring"),
+        "real_estate": alignment.get("tone_guidelines", "Premium and elegant"),
+        "event": alignment.get("tone_guidelines", "Exciting and clear"),
     }.get(category, "Clear, persuasive, and action-oriented")
     channels = _clean(form_data.get("platform"))
     channel_list = [c.strip() for c in re.split(r"[,/]", channels) if c.strip()] if channels else {
@@ -159,6 +173,9 @@ def build_campaign_strategy(form_data: dict[str, Any]) -> dict[str, Any]:
         "education": "Structured guidance that builds confidence and exam readiness",
         "beauty": "A simple routine for a fresh, confident glow",
         "technology": "A faster, simpler way to get the job done",
+        "healthcare": (alignment.get("recommended_benefits") or ["Trusted care for your family"])[0],
+        "real_estate": (alignment.get("recommended_benefits") or ["Premium living designed for modern professionals"])[0],
+        "event": (alignment.get("recommended_benefits") or ["Live experience with limited seats"])[0],
     }.get(category, f"A practical solution that helps {audience} get better results")
     message = {
         "food": "Hot, fresh favorites at a price that makes weekend ordering easy",
@@ -166,9 +183,12 @@ def build_campaign_strategy(form_data: dict[str, Any]) -> dict[str, Any]:
         "education": "Focused preparation for confident performance",
         "beauty": "Glow with confidence every day",
         "technology": "Simplify your workflow and move faster",
+        "healthcare": _clean(form_data.get("offer")) or "FREE HEALTH CHECKUP",
+        "real_estate": _clean(form_data.get("offer")) or "EXCLUSIVE SITE VISIT THIS WEEKEND",
+        "event": _clean(form_data.get("offer")) or "Reserve your spot today",
     }.get(category, f"{topic} made easier, clearer, and more valuable")
     objective = _infer_objective(topic, text, category)
-    return {
+    result = {
         "campaign_objective": objective,
         "target_audience": audience,
         "audience_pain_points": pains,
@@ -181,7 +201,9 @@ def build_campaign_strategy(form_data: dict[str, Any]) -> dict[str, Any]:
         "campaign_summary": f"A {audience.lower()} campaign focused on {value.lower()}, using '{message}' to support the {offer} and drive the action: {cta}.",
         "source_prompt": topic,
         "category": category,
+        "industry": industry,
     }
+    return industry_engine.validate_semantic_alignment(result, alignment)
 
 
 def format_strategy_for_prompt(strategy: dict[str, Any]) -> str:

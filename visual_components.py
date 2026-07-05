@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from typing import Any
 
+import industry_engine
+
 COMPONENT_FIELDS = (
     "component_system_name", "primary_components", "secondary_components",
     "conversion_components", "trust_components", "decorative_components",
@@ -46,7 +48,12 @@ def _text(*parts: object) -> str:
     return " ".join(str(p or "") for p in parts).lower()
 
 
-def _family(form_data: dict[str, Any], composition_strategy: dict[str, Any]) -> str:
+def _family(form_data: dict[str, Any], composition_strategy: dict[str, Any], industry_alignment: dict[str, Any] | None = None) -> str:
+    if industry_alignment:
+        family_map = {"fitness_app": "Fitness / App Launch", "cafe_food": "Café / Food Offer", "edtech": "EdTech / Workshop", "restaurant": "Restaurant / Family Offer", "real_estate": "Luxury / Real Estate", "healthcare": "Healthcare / Clinic"}
+        picked = family_map.get(str(industry_alignment.get("detected_industry")))
+        if picked:
+            return picked
     family = str(composition_strategy.get("layout_family") or "")
     if family in INDUSTRY_COMPONENTS:
         return family
@@ -71,6 +78,7 @@ def build_visual_component_strategy(
     creative_strategy: dict[str, Any] | None = None,
     design_strategy: dict[str, Any] | None = None,
     composition_strategy: dict[str, Any] | None = None,
+    industry_alignment: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Return a structured component plan for richer rendered marketing assets."""
     campaign_strategy = campaign_strategy or {}
@@ -78,7 +86,8 @@ def build_visual_component_strategy(
     design_strategy = design_strategy or {}
     composition_strategy = composition_strategy or {}
     content_type = str(form_data.get("content_type") or "Asset")
-    family = _family(form_data, composition_strategy)
+    alignment = industry_alignment or industry_engine.build_industry_alignment(form_data)
+    family = _family(form_data, composition_strategy, alignment)
     industry = INDUSTRY_COMPONENTS[family]
     primary = industry[:3] + ["offer_badge", "cta_button"]
     secondary = industry[3:] + ["benefit_card", "feature_chip", "image_frame"]
@@ -90,7 +99,7 @@ def build_visual_component_strategy(
         "Banner": primary[:4] + secondary[:3] + ["trust_strip"],
         "Pamphlet": primary + secondary + trust + ["section_divider"],
     }.get(content_type, primary + secondary[:2])
-    return {
+    result = {
         "component_system_name": f"{family} Visual Component System",
         "primary_components": primary,
         "secondary_components": secondary,
@@ -115,6 +124,7 @@ def build_visual_component_strategy(
         "html_component_plan": [f"Use {name.replace('_', ' ')} to communicate customer value." for name in asset_components],
         "asset_specific_components": asset_components,
     }
+    return industry_engine.validate_semantic_alignment(result, alignment)
 
 
 def format_visual_components_for_prompt(strategy: dict[str, Any] | None) -> str:

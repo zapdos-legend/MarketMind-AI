@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from typing import Any
 
+import industry_engine
+
 DESIGN_FIELDS = (
     "design_concept",
     "layout_type",
@@ -62,6 +64,7 @@ def build_design_strategy(
     form_data: dict[str, Any],
     campaign_strategy: dict[str, Any] | None = None,
     creative_strategy: dict[str, Any] | None = None,
+    industry_alignment: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build a structured visual design strategy for generated assets."""
     if not isinstance(form_data, dict):
@@ -69,7 +72,9 @@ def build_design_strategy(
     campaign_strategy = campaign_strategy or {}
     creative_strategy = creative_strategy or {}
     text = _combined(form_data, campaign_strategy, creative_strategy)
-    cat = _category(text, campaign_strategy)
+    alignment = industry_alignment or industry_engine.build_industry_alignment(form_data)
+    industry = alignment.get("detected_industry", "generic_business")
+    cat = {"healthcare":"healthcare", "real_estate":"real_estate", "cafe_food":"cafe_breakfast", "fitness_app":"fitness", "edtech":"education", "beauty_skincare":"beauty"}.get(industry, _category(text, campaign_strategy))
     offer = _clean(campaign_strategy.get("offer_strategy") or creative_strategy.get("offer_framing") or form_data.get("offer"), "Limited-time offer")
 
     library: dict[str, dict[str, Any]] = {
@@ -128,6 +133,8 @@ def build_design_strategy(
             "composition_rules": ["Make proof visible", "Keep sections scannable", "Use cards for courses/features", "CTA should feel enrollment-ready"],
             "component_plan": ["Logo", "Outcome headline", "Credibility badges", "Course/benefit cards", "Demo/offer block", "CTA"],
         },
+        "healthcare": {"design_concept": "Calm healthcare appointment campaign", "layout_type": "Healthcare / Clinic", "visual_hierarchy": ["Trust headline", "Doctor/clinic visual", "Service cards", "Appointment CTA"], "typography_style": "Clean trustworthy healthcare hierarchy", "color_palette": ["white", "calm blue", "aqua", "slate"], "background_style": "Clean healthcare layout with calm colors", "image_direction": alignment.get("visual_guidelines", "Use doctor, clinic, and family wellness imagery."), "composition_rules": alignment.get("copy_guardrails", []), "component_plan": ["Doctor card", "Appointment card", "Credibility badge", "Service cards", "CTA"]},
+        "real_estate": {"design_concept": "Premium property site visit campaign", "layout_type": "Luxury / Real Estate", "visual_hierarchy": ["Architecture hero", "Premium headline", "Amenity grid", "Site visit CTA"], "typography_style": "Elegant premium editorial typography", "color_palette": ["charcoal", "gold", "ivory", "slate"], "background_style": "Dark premium styling with gold accents", "image_direction": alignment.get("visual_guidelines", "Use luxury architecture and apartment imagery."), "composition_rules": alignment.get("copy_guardrails", []), "component_plan": ["Property highlight", "Amenity grid", "Site visit badge", "Location pin", "CTA"]},
         "generic": {
             "design_concept": "Clean modern commercial campaign",
             "layout_type": "Modern conversion-focused marketing layout",
@@ -152,7 +159,7 @@ def build_design_strategy(
         "Prefer accessible contrast and scannable spacing for print and web previews.",
     ]
     design["category"] = cat
-    return design
+    return industry_engine.validate_semantic_alignment(design, alignment)
 
 
 def format_design_for_prompt(design_strategy: dict[str, Any] | None) -> str:

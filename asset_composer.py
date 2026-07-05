@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from typing import Any
 
+import industry_engine
+
 COMPOSITION_FIELDS = (
     "composition_name", "layout_family", "visual_structure", "hero_zone",
     "headline_zone", "offer_zone", "cta_zone", "trust_zone", "benefit_zone",
@@ -20,7 +22,12 @@ def _text(*parts: object) -> str:
     return " ".join(str(p or "") for p in parts).lower()
 
 
-def _pick_family(form_data: dict[str, Any], campaign_strategy: dict[str, Any], creative_strategy: dict[str, Any], design_strategy: dict[str, Any]) -> str:
+def _pick_family(form_data: dict[str, Any], campaign_strategy: dict[str, Any], creative_strategy: dict[str, Any], design_strategy: dict[str, Any], industry_alignment: dict[str, Any] | None = None) -> str:
+    if industry_alignment:
+        family_map = {"fitness_app": "Fitness / App Launch", "cafe_food": "Café / Food Offer", "edtech": "EdTech / Workshop", "restaurant": "Restaurant / Family Offer", "real_estate": "Luxury / Real Estate", "healthcare": "Healthcare / Clinic"}
+        picked = family_map.get(str(industry_alignment.get("detected_industry")))
+        if picked:
+            return picked
     blob = _text(
         form_data.get("content_type"), form_data.get("topic"), form_data.get("business_name"),
         form_data.get("product_service"), form_data.get("audience"), form_data.get("platform"),
@@ -41,13 +48,14 @@ def _pick_family(form_data: dict[str, Any], campaign_strategy: dict[str, Any], c
     return "Generic Professional"
 
 
-def build_asset_composition(form_data: dict[str, Any], campaign_strategy: dict[str, Any] | None = None, creative_strategy: dict[str, Any] | None = None, design_strategy: dict[str, Any] | None = None) -> dict[str, Any]:
+def build_asset_composition(form_data: dict[str, Any], campaign_strategy: dict[str, Any] | None = None, creative_strategy: dict[str, Any] | None = None, design_strategy: dict[str, Any] | None = None, industry_alignment: dict[str, Any] | None = None) -> dict[str, Any]:
     """Return a structured composition dictionary for the requested asset."""
     campaign_strategy = campaign_strategy or {}
     creative_strategy = creative_strategy or {}
     design_strategy = design_strategy or {}
     content_type = str(form_data.get("content_type") or "Asset")
-    family = _pick_family(form_data, campaign_strategy, creative_strategy, design_strategy)
+    alignment = industry_alignment or industry_engine.build_industry_alignment(form_data)
+    family = _pick_family(form_data, campaign_strategy, creative_strategy, design_strategy, alignment)
     specs: dict[str, dict[str, Any]] = {
         "Fitness / App Launch": dict(name="Athletic App Launch Split", structure="Bold split layout with oversized kinetic type, workout visual, floating app benefit cards, neon offer badge, and high-energy CTA.", hero="Right-side athlete/app hero with diagonal crop and glow.", bg=["charcoal gradient", "electric green/cyan glows", "diagonal speed lines"], decor=["neon rings", "floating app cards", "energy ticks"], tokens={"primary":"#08111f","accent":"#39ff88","secondary":"#22d3ee","radius":"28px"}),
         "Café / Food Offer": dict(name="Warm Morning Combo", structure="Horizontal cozy breakfast layout with large food image, prominent price badge, warm CTA, and soft café textures.", hero="Large coffee/breakfast image zone with steam-like accents.", bg=["espresso-to-cream gradient", "soft morning light", "rounded cozy blobs"], decor=["steam curves", "price badge", "bean dots"], tokens={"primary":"#4a2c1a","accent":"#f59e0b","secondary":"#fef3c7","radius":"34px"}),
@@ -63,7 +71,7 @@ def build_asset_composition(form_data: dict[str, Any], campaign_strategy: dict[s
         "Banner": "Use a wide horizontal composition; keep copy short and put CTA/offer in the first scan path.",
         "Pamphlet": "Use multi-panel brochure sections with distinct cover, benefits, proof, offer, and contact panels.",
     }.get(content_type, "Keep the composition clean, responsive, and customer-facing.")
-    return {
+    result = {
         "composition_name": spec["name"], "layout_family": family, "visual_structure": spec["structure"],
         "hero_zone": spec["hero"], "headline_zone": "Primary headline gets the largest type and strongest contrast.",
         "offer_zone": "Offer appears as a visible badge/card without exposing strategy labels.",
@@ -77,6 +85,7 @@ def build_asset_composition(form_data: dict[str, Any], campaign_strategy: dict[s
         "html_sections": ["brand", "headline", "hero", "offer", "benefits", "trust", "cta"],
         "asset_specific_notes": asset_notes,
     }
+    return industry_engine.validate_semantic_alignment(result, alignment)
 
 
 def format_composition_for_prompt(composition: dict[str, Any] | None) -> str:

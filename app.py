@@ -32,6 +32,7 @@ import design_engine
 import asset_composer
 import prompt_builder
 import visual_components
+import industry_engine
 
 
 LOGGER = logging.getLogger(__name__)
@@ -170,12 +171,14 @@ def _customer_offer_text(value: Any, topic: str = "") -> str:
     return "LIMITED TIME OFFER"
 
 
-def _customer_benefits(items: list[str], strategy: dict[str, Any], form_data: dict[str, str]) -> list[str]:
+def _customer_benefits(items: list[str], strategy: dict[str, Any], form_data: dict[str, str], industry_alignment: dict[str, Any] | None = None) -> list[str]:
     """Sanitize benefit cards and backfill with audience-facing benefits."""
     benefits = [_sanitize_asset_copy(item) for item in items]
     benefits = [item for item in benefits if item and not re.search(r"layout|visual direction|do not generate", item, re.I)]
     text = " ".join(str(form_data.get(k, "")) for k in ("topic", "product_service", "audience", "notes")).lower()
-    if "fitness" in text or "workout" in text:
+    if industry_alignment and industry_alignment.get("recommended_benefits"):
+        defaults = list(industry_alignment.get("recommended_benefits", []))
+    elif "fitness" in text or "workout" in text:
         defaults = ["Quick workouts", "Progress tracking", "Fits busy schedules"]
     elif "pizza" in text or "food" in text:
         defaults = ["Fresh from the oven", "Half-price favorites", "Easy weekend ordering"]
@@ -188,7 +191,7 @@ def _customer_benefits(items: list[str], strategy: dict[str, Any], form_data: di
             benefits.append(item)
     return benefits[:3]
 
-def _asset_theme(form_data: dict[str, str], strategy: dict[str, Any] | None = None, creative_strategy: dict[str, Any] | None = None, design_strategy: dict[str, Any] | None = None) -> dict[str, Any]:
+def _asset_theme(form_data: dict[str, str], strategy: dict[str, Any] | None = None, creative_strategy: dict[str, Any] | None = None, design_strategy: dict[str, Any] | None = None, industry_alignment: dict[str, Any] | None = None) -> dict[str, Any]:
     """Choose a professional visual theme from campaign details and strategy."""
     strategy = strategy or {}
     creative_strategy = creative_strategy or {}
@@ -199,6 +202,17 @@ def _asset_theme(form_data: dict[str, str], strategy: dict[str, Any] | None = No
         + [str(creative_strategy.get(key, "")) for key in ("visual_direction", "imagery_direction", "color_mood", "campaign_concept")]
         + [str(design_strategy.get(key, "")) for key in ("design_concept", "layout_type", "background_style", "image_direction", "category")]
     ).lower()
+    if industry_alignment:
+        forced = {
+            "healthcare": ("Care Clinic", "#0f766e", "#38bdf8", "#14b8a6", "#e0f2fe", "linear-gradient(135deg, #ecfeff 0%, #bae6fd 52%, #14b8a6 100%)", "https://images.unsplash.com/photo-1584515933487-779824d29309?auto=format&fit=crop&w=1200&q=80", ("🩺", "👨‍⚕️", "✅"), "Trusted care for your family", "HEALTH CHECKUP"),
+            "real_estate": ("Skyline Premium", "#11100e", "#d4af37", "#f8fafc", "#fef3c7", "linear-gradient(135deg, #111827 0%, #3f3f46 55%, #d4af37 100%)", "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80", ("🏙️", "📍", "✨"), "Premium living designed for modern professionals", "PREMIUM LIVING"),
+            "cafe_food": ("Morning Café", "#4b2e1f", "#a16207", "#fbbf24", "#fef3c7", "linear-gradient(135deg, #3f2418 0%, #8b5e34 55%, #fbbf24 100%)", "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80", ("☕", "🥪", "🌅"), "Fueling focused mornings for busy office workers", "MORNING COMBO"),
+            "fitness_app": ("Momentum Fitness", "#111827", "#16a34a", "#f97316", "#dcfce7", "linear-gradient(135deg, #0f172a 0%, #14532d 52%, #f97316 100%)", "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=1200&q=80", ("⚡", "📈", "🏋️"), "Trusted by students building stronger daily routines", "WORKOUT ENERGY"),
+            "edtech": ("Scholastic Edge", "#312e81", "#2563eb", "#a855f7", "#e0e7ff", "linear-gradient(135deg, #1e1b4b 0%, #2563eb 56%, #a855f7 100%)", "https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?auto=format&fit=crop&w=1200&q=80", ("🎓", "📚", "💬"), "Trusted by ambitious learners", "LEARN SMARTER"),
+        }.get(str(industry_alignment.get("detected_industry")))
+        if forced:
+            name, primary, secondary, accent, soft, gradient, image, icons, proof, visual_label = forced
+            return {"name": name, "primary": primary, "secondary": secondary, "accent": accent, "soft": soft, "gradient": gradient, "image": image, "icons": icons, "proof": proof, "visual_label": visual_label}
     theme_list = [
         (("fitness", "gym", "workout", "running", "health", "training", "exercise"), "Momentum Fitness", "#111827", "#16a34a", "#f97316", "#dcfce7", "linear-gradient(135deg, #0f172a 0%, #14532d 52%, #f97316 100%)", "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=1200&q=80", ("⚡", "📈", "🏋️"), "Trusted by students building stronger daily routines", "WORKOUT ENERGY"),
         (("cafe", "café", "coffee", "breakfast", "sandwich"), "Morning Café", "#4b2e1f", "#a16207", "#fbbf24", "#fef3c7", "linear-gradient(135deg, #3f2418 0%, #8b5e34 55%, #fbbf24 100%)", "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=80", ("☕", "🥪", "🌅"), "Fueling focused mornings for busy office workers", "MORNING COMBO"),
@@ -246,7 +260,7 @@ def _icon_card_html(items: list[str], icons: tuple[str, ...]) -> str:
     )
 
 
-def _render_asset_html(content_type: str, result: str, form_data: dict[str, str], strategy: dict[str, Any] | None = None, creative_strategy: dict[str, Any] | None = None, design_strategy: dict[str, Any] | None = None, composition_strategy: dict[str, Any] | None = None, visual_component_strategy: dict[str, Any] | None = None) -> str:
+def _render_asset_html(content_type: str, result: str, form_data: dict[str, str], strategy: dict[str, Any] | None = None, creative_strategy: dict[str, Any] | None = None, design_strategy: dict[str, Any] | None = None, composition_strategy: dict[str, Any] | None = None, visual_component_strategy: dict[str, Any] | None = None, industry_alignment: dict[str, Any] | None = None) -> str:
     """Create a standalone HTML asset preview for poster, banner, or pamphlet."""
     topic = _safe_asset_text(form_data.get("topic"), "Marketing Campaign")
     brand = _safe_asset_text(form_data.get("business_name") or form_data.get("product_service"), "MarketMind AI")
@@ -269,11 +283,11 @@ def _render_asset_html(content_type: str, result: str, form_data: dict[str, str]
     copy_default = (subheadline_options[0] if subheadline_options else creative_strategy.get("creative_angle") or f"A polished campaign preview for {topic}.")
     copy = _sanitize_asset_copy(_extract_label_value(result, ("Supporting copy", "Subheadline", "Introduction", "Subcopy", "Copy", "Body Copy"), copy_default), f"A polished campaign preview for {topic}.")
     cta = _sanitize_asset_copy((cta_options[0] if cta_options else "") or _extract_label_value(result, ("CTA", "Call to action", "Back panel CTA"), str(strategy.get("primary_cta") or "Get started today"))).upper()
-    bullets = _customer_benefits([item[2:].strip() if item.lower().startswith(("✓ ", "✔ ")) else item for item in _extract_bullets(result, 3)], strategy, form_data)
-    theme = _asset_theme(form_data, strategy, creative_strategy, design_strategy)
-    composition_strategy = composition_strategy or asset_composer.build_asset_composition(form_data, strategy, creative_strategy, design_strategy)
+    bullets = _customer_benefits([item[2:].strip() if item.lower().startswith(("✓ ", "✔ ")) else item for item in _extract_bullets(result, 3)], strategy, form_data, industry_alignment)
+    theme = _asset_theme(form_data, strategy, creative_strategy, design_strategy, industry_alignment)
+    composition_strategy = composition_strategy or asset_composer.build_asset_composition(form_data, strategy, creative_strategy, design_strategy, industry_alignment)
     layout_family = str(composition_strategy.get("layout_family", "Generic Professional"))
-    visual_component_strategy = visual_component_strategy or visual_components.build_visual_component_strategy(form_data, strategy, creative_strategy, design_strategy, composition_strategy)
+    visual_component_strategy = visual_component_strategy or visual_components.build_visual_component_strategy(form_data, strategy, creative_strategy, design_strategy, composition_strategy, industry_alignment)
     sanitized_result = _sanitize_asset_copy(result, result)
     safe = {key: escape(value) for key, value in {"content_type": content_type, "topic": topic, "brand": brand, "offer": offer, "audience": audience, "headline": headline, "copy": copy, "cta": cta, "result": sanitized_result, "proof": theme["proof"], "theme_name": theme["name"], "layout_type": str(design_strategy.get("layout_type", theme["name"])), "typography": str(design_strategy.get("typography_style", "Bold modern hierarchy"))}.items()}
     benefit_cards = _icon_card_html(bullets, theme["icons"])
@@ -323,7 +337,7 @@ def _render_asset_html(content_type: str, result: str, form_data: dict[str, str]
 :root {{ color-scheme:light; --ink:#0f172a; --muted:#64748b; --primary:{theme['primary']}; --secondary:{theme['secondary']}; --accent:{theme['accent']}; --soft:{theme['soft']}; --gradient:{theme['gradient']}; }} *{{box-sizing:border-box}} body{{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:radial-gradient(circle at 12% 10%,var(--soft),transparent 24rem),#f8fafc}} .asset-shell{{min-height:100vh;display:grid;place-items:center;padding:clamp(1rem,4vw,4rem)}} .poster-preview,.banner-preview,.brochure{{width:min(100%,76rem);border-radius:2.25rem;overflow:hidden;box-shadow:0 2.5rem 6rem rgba(15,23,42,.24)}} .poster-preview{{min-height:82vh;padding:clamp(1.35rem,4vw,3.5rem);background:linear-gradient(135deg,rgba(255,255,255,.95),rgba(255,255,255,.78)),var(--gradient)}} .brand-row,.poster-footer,.banner-actions{{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}} .logo-mark{{width:3.25rem;height:3.25rem;border-radius:1rem;display:grid;place-items:center;background:var(--gradient);color:white;font-weight:950;font-size:1.5rem}} .brand-row small{{display:block;color:var(--muted);font-weight:700;margin-top:.15rem}} .poster-hero{{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(1.5rem,4vw,4rem);align-items:center;padding:clamp(2rem,6vw,5rem) 0}} .eyebrow,.section-label{{margin:0 0 1rem;text-transform:uppercase;letter-spacing:.15em;font-weight:900;color:var(--secondary);font-size:.8rem}} h1{{margin:0;font-size:clamp(3rem,8vw,7rem);line-height:.88;letter-spacing:-.07em;max-width:9.5ch}} h2{{margin:.1rem 0 1rem;font-size:clamp(1.6rem,3vw,2.3rem);line-height:1.02;letter-spacing:-.04em}} .asset-copy,p,li{{font-size:clamp(1rem,1.8vw,1.25rem);line-height:1.55}} .asset-copy{{color:#334155;max-width:42rem}} .visual-wrap,.visual-frame{{position:relative}} .visual-frame{{min-height:25rem;border-radius:2rem;overflow:hidden;background-image:linear-gradient(135deg,rgba(15,23,42,.12),rgba(15,23,42,.54)),var(--asset-image),var(--fallback-visual);background-size:cover;background-position:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.22),0 1.5rem 3rem rgba(15,23,42,.2);isolation:isolate}} .visual-overlay{{position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(15,23,42,.38));z-index:1}} .visual-chip{{position:absolute;left:1.1rem;bottom:1.1rem;z-index:2;padding:.7rem .9rem;border-radius:999px;background:rgba(255,255,255,.88);color:var(--primary);font-weight:950;letter-spacing:.08em;font-size:.76rem;box-shadow:0 .75rem 1.5rem rgba(15,23,42,.18)}} .offer-badge{{position:absolute;z-index:4;top:1rem;right:1rem;max-width:14rem;padding:1rem 1.15rem;border-radius:999px;background:var(--accent);color:#111827;font-weight:950;text-transform:uppercase;letter-spacing:.05em;text-align:center;box-shadow:0 1rem 2rem rgba(15,23,42,.22)}} .benefit-grid{{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin:2rem 0}} .benefit-card{{padding:1.15rem;border-radius:1.25rem;background:rgba(255,255,255,.82);border:1px solid rgba(15,23,42,.08);box-shadow:0 .8rem 1.8rem rgba(15,23,42,.08)}} .benefit-card span{{display:block;font-size:1.65rem;margin-bottom:.6rem}} .asset-cta{{display:inline-flex;align-items:center;justify-content:center;padding:1rem 1.4rem;border-radius:999px;background:var(--ink);color:white;text-decoration:none;font-weight:950;box-shadow:0 1rem 2rem rgba(15,23,42,.2)}} .poster-footer{{border-top:1px solid rgba(15,23,42,.1);padding-top:1.25rem;color:#334155;font-weight:800}} .banner-preview{{min-height:22rem;padding:clamp(1.5rem,5vw,4rem);display:grid;grid-template-columns:1.2fr .8fr;gap:2rem;align-items:center;background:var(--gradient);color:white}} .banner-preview h1{{font-size:clamp(2.4rem,5.4vw,5.5rem);max-width:11ch}} .banner-preview .eyebrow,.banner-preview .asset-copy{{color:white}} .banner-preview .asset-copy{{opacity:.9}} .banner-visual{{min-height:18rem;border:8px solid rgba(255,255,255,.24);transform:rotate(2deg)}} .banner-preview .asset-cta{{background:white;color:var(--primary)}} .trust-pill{{padding:.85rem 1rem;border-radius:999px;background:rgba(255,255,255,.16);font-weight:800}} .brochure{{display:grid;grid-template-columns:repeat(3,1fr);background:#fff}} .panel{{min-height:25rem;padding:clamp(1.25rem,3vw,2rem);border:1px solid rgba(15,23,42,.08);position:relative;overflow:hidden}} .cover{{grid-row:span 2;display:flex;flex-direction:column;justify-content:space-between;background:var(--gradient);color:white}} .cover .eyebrow,.cover p{{color:white}} .cover .visual-frame{{min-height:14rem;margin-top:1.25rem}} .cover .offer-badge{{position:static;display:inline-block;margin:1rem 0}} .feature-list{{list-style:none;padding:0;margin:0}} .feature-list li{{display:flex;gap:.65rem;margin-bottom:.8rem}} .feature-list span{{color:var(--secondary);font-weight:950}} .proof-panel{{background:var(--soft)}} .offer-panel{{background:#0f172a;color:white;display:flex;flex-direction:column;justify-content:center}} .offer-panel .section-label,.offer-panel p{{color:white}} .offer-panel .asset-cta{{background:white;color:#0f172a}} .qr-box{{width:7rem;height:7rem;margin:1.4rem 0;border-radius:1rem;display:grid;place-items:center;text-align:center;background:repeating-linear-gradient(45deg,#fff 0 8px,#e2e8f0 8px 16px);color:#0f172a;font-weight:950}} .contact-line{{font-size:.95rem;opacity:.86}} .source-copy{{padding:2rem;max-width:76rem;margin:0 auto 3rem;background:rgba(255,255,255,.82);border-radius:1.25rem;white-space:pre-wrap}} .source-copy pre{{white-space:pre-wrap;overflow-wrap:anywhere}} .fitness-poster{{background:radial-gradient(circle at 75% 20%,rgba(57,255,136,.35),transparent 18rem),#07111f;color:white}} .fitness-poster .asset-copy,.fitness-poster .eyebrow{{color:#d1fae5}} .fitness-grid{{display:grid;grid-template-columns:1fr .9fr;gap:3rem;align-items:center;margin-top:3rem}} .neon{{background:#39ff88!important;color:#07111f!important;box-shadow:0 0 32px rgba(57,255,136,.55)}} .float-card{{position:absolute;z-index:5;padding:.9rem 1rem;border-radius:1rem;background:rgba(7,17,31,.82);color:white;border:1px solid rgba(57,255,136,.5);font-weight:900}} .float-card.one{{left:-1rem;top:20%}} .float-card.two{{right:-1rem;bottom:16%}} .fitness-banner{{grid-template-columns:1fr .8fr .55fr;background:#07111f}} .benefit-rail .benefit-grid,.benefit-rail{{display:grid;gap:.75rem}} .cafe-poster,.cafe-banner,.cafe-brochure .cover{{background:linear-gradient(135deg,#fff7ed,#92400e);color:#4a2c1a}} .cafe-poster{{display:grid;grid-template-columns:.95fr 1.05fr;align-items:center;gap:2rem}} .cafe-plate .visual-frame{{border-radius:50%;min-height:34rem}} .price-badge{{display:inline-grid;place-items:center;min-width:8rem;min-height:8rem;padding:1rem;border-radius:50%;background:#f59e0b;color:#3b1f12;font-weight:950;text-align:center;box-shadow:0 1rem 2rem rgba(74,44,26,.25)}} .cafe-banner{{grid-template-columns:auto 1fr .8fr}} .luxury-poster,.luxury-banner,.luxury-brochure{{background:#11100e!important;color:#f8fafc}} .luxury-poster{{display:grid;grid-template-columns:1.15fr .85fr;gap:3rem;padding:2rem}} .luxury-hero .visual-frame{{min-height:70vh;border-radius:0}} .gold-line{{width:8rem;height:2px;background:#d4af37;margin:1.4rem 0}} .luxury-banner{{grid-template-columns:1.2fr .8fr;border-radius:.75rem}} .luxury-banner .asset-cta,.luxury-poster .asset-cta{{background:#d4af37;color:#11100e}} .healthcare-poster,.healthcare-banner,.healthcare-brochure .cover{{background:linear-gradient(135deg,#ffffff,#e0f2fe);color:#0f172a}} .trust-strip{{padding:1rem 1.2rem;border-radius:999px;background:#e0f2fe;color:#075985;font-weight:900;display:inline-flex;margin-bottom:1rem}} .healthcare-banner{{grid-template-columns:1fr auto .75fr;background:linear-gradient(135deg,#ffffff,#cffafe);color:#0f172a}} .healthcare-banner .eyebrow,.healthcare-banner .asset-copy{{color:#0f766e}} .phone-mockup{{width:13rem;margin:auto;padding:.7rem;border-radius:2rem;background:#020617;border:3px solid rgba(255,255,255,.25);box-shadow:0 1.5rem 3rem rgba(0,0,0,.35)}}.phone-top{{width:4rem;height:.35rem;background:#334155;border-radius:99px;margin:.2rem auto .8rem}}.app-screen{{border-radius:1.35rem;padding:1rem;background:linear-gradient(180deg,#10231d,#07111f);color:white}}.app-label{{font-size:.7rem;color:#86efac;margin:0 0 .35rem}}.progress-track,.skill-progress div{{height:.65rem;background:rgba(255,255,255,.18);border-radius:99px;overflow:hidden;margin:.8rem 0}}.progress-track span,.skill-progress span{{display:block;height:100%;background:var(--accent);border-radius:inherit}}.app-stats{{display:grid;grid-template-columns:repeat(3,1fr);gap:.35rem}}.app-stats span,.app-notice,.progress-streak-card,.workout-stat-card,.challenge-badge,.combo-card,.warm-review-card,.opening-hours-strip,.course-card,.certificate-badge,.mentor-card,.enrollment-counter,.reservation-card,.menu-offer-card,.chef-special-chip,.family-table-badge,.property-highlight-card,.site-visit-badge,.location-pin-card,.luxury-feature-strip,.doctor-card,.appointment-card,.credibility-badge,.care-benefit-strip,.stat-card,.testimonial-card{{display:block;margin:.65rem 0;padding:.75rem .9rem;border-radius:1rem;background:rgba(255,255,255,.86);color:#0f172a;box-shadow:0 .7rem 1.6rem rgba(15,23,42,.13);font-weight:850}}.component-layer{{position:absolute;inset:8% 6%;z-index:4;pointer-events:none}}.progress-streak-card{{position:absolute;left:-2rem;top:12%}}.workout-stat-card{{position:absolute;right:-2rem;bottom:8%}}.workout-stat-card strong{{font-size:2rem}}.workout-stat-card span,.combo-card span,.property-highlight-card span{{display:block;font-size:.82rem}}.challenge-badge{{position:absolute;right:-1rem;top:1rem;background:#39ff88}}.menu-chips,.amenity-grid,.service-cards{{display:flex;flex-wrap:wrap;gap:.5rem;margin:.8rem 0}}.menu-chips span,.amenity-grid span,.service-cards span{{padding:.55rem .8rem;border-radius:999px;background:rgba(255,255,255,.8);font-weight:900}}.combo-card{{border:2px dashed #f59e0b}}.skill-progress{{padding:1rem;border-radius:1rem;background:rgba(255,255,255,.9);color:#172554;margin:1rem 0}}.certificate-badge,.enrollment-counter{{display:inline-block;margin-right:.5rem;background:#dbeafe}}.amenity-grid span{{background:rgba(212,175,55,.18);color:#f8fafc;border:1px solid rgba(212,175,55,.45)}}.property-highlight-card,.site-visit-badge,.location-pin-card,.luxury-feature-strip{{background:rgba(17,16,14,.72);color:#f8fafc;border:1px solid rgba(212,175,55,.45)}}.doctor-card,.appointment-card,.credibility-badge,.care-benefit-strip{{background:#ecfeff;color:#0f766e}}.service-cards span{{background:#cffafe;color:#075985}}.edtech-poster,.edtech-banner{{background:linear-gradient(135deg,#eff6ff,#172554)!important}}.restaurant-poster,.restaurant-banner{{background:linear-gradient(135deg,#7f1d1d,#fb923c)!important;color:white}}.stat-card,.testimonial-card{{display:inline-block;margin-right:.6rem}} @media (max-width:920px){{.poster-hero,.banner-preview,.brochure{{grid-template-columns:1fr}}.benefit-grid{{grid-template-columns:1fr}}.visual-frame{{min-height:18rem}}.panel{{min-height:auto}}h1{{max-width:12ch}}}} @media (max-width:560px){{.asset-shell{{padding:.75rem}}.poster-preview,.banner-preview,.brochure{{border-radius:1.35rem}}h1{{font-size:clamp(2.45rem,16vw,4rem)}}.banner-actions{{align-items:stretch}}.asset-cta,.trust-pill{{width:100%}}}}
 </style></head><body>{asset_body}</body></html>"""
 
-def _create_visual_asset(result: str, form_data: dict[str, str], strategy: dict[str, Any] | None = None, creative_strategy: dict[str, Any] | None = None, design_strategy: dict[str, Any] | None = None, composition_strategy: dict[str, Any] | None = None, visual_component_strategy: dict[str, Any] | None = None) -> dict[str, str] | None:
+def _create_visual_asset(result: str, form_data: dict[str, str], strategy: dict[str, Any] | None = None, creative_strategy: dict[str, Any] | None = None, design_strategy: dict[str, Any] | None = None, composition_strategy: dict[str, Any] | None = None, visual_component_strategy: dict[str, Any] | None = None, industry_alignment: dict[str, Any] | None = None) -> dict[str, str] | None:
     """Create a downloadable HTML preview for supported visual assets."""
     content_type = form_data.get("content_type", "")
     if content_type not in VISUAL_ASSET_TYPES:
@@ -332,7 +346,7 @@ def _create_visual_asset(result: str, form_data: dict[str, str], strategy: dict[
     GENERATED_DIR.mkdir(parents=True, exist_ok=True)
     filename = _asset_filename(content_type)
     (GENERATED_DIR / filename).write_text(
-        _render_asset_html(content_type, result, form_data, strategy, creative_strategy, design_strategy, composition_strategy, visual_component_strategy),
+        _render_asset_html(content_type, result, form_data, strategy, creative_strategy, design_strategy, composition_strategy, visual_component_strategy, industry_alignment),
         encoding="utf-8",
     )
     return {"filename": filename, "label": f"{content_type} preview"}
@@ -371,7 +385,7 @@ def _validate_analysis_request() -> tuple[dict[str, str], list[str]]:
     return cleaned_data, errors
 
 
-def _build_prompt(form_data: dict[str, str], strategy: dict[str, Any] | None = None, creative_strategy: dict[str, Any] | None = None, design_strategy: dict[str, Any] | None = None, composition_strategy: dict[str, Any] | None = None, visual_component_strategy: dict[str, Any] | None = None) -> Any:
+def _build_prompt(form_data: dict[str, str], strategy: dict[str, Any] | None = None, creative_strategy: dict[str, Any] | None = None, design_strategy: dict[str, Any] | None = None, composition_strategy: dict[str, Any] | None = None, visual_component_strategy: dict[str, Any] | None = None, industry_alignment: dict[str, Any] | None = None) -> Any:
     """Build an AI prompt using prompt_builder.py's public helper."""
     builder = _get_callable(
         prompt_builder,
@@ -381,7 +395,7 @@ def _build_prompt(form_data: dict[str, str], strategy: dict[str, Any] | None = N
         raise RuntimeError("prompt_builder.py does not expose a prompt builder function.")
 
     try:
-        return builder(form_data, strategy, creative_strategy, design_strategy, composition_strategy, visual_component_strategy)
+        return builder(form_data, strategy, creative_strategy, design_strategy, composition_strategy, visual_component_strategy, industry_alignment)
     except TypeError:
         try:
             return builder(form_data, strategy)
@@ -395,7 +409,7 @@ def _build_prompt(form_data: dict[str, str], strategy: dict[str, Any] | None = N
             return builder(data)
 
 
-def _run_analysis(prompt: Any, visual_component_strategy: dict[str, Any] | None = None) -> Any:
+def _run_analysis(prompt: Any, visual_component_strategy: dict[str, Any] | None = None, industry_alignment: dict[str, Any] | None = None) -> Any:
     """Run the prompt through ai_engine.py's public analysis helper."""
     analyzer = _get_callable(
         ai_engine,
@@ -405,7 +419,7 @@ def _run_analysis(prompt: Any, visual_component_strategy: dict[str, Any] | None 
         raise RuntimeError("ai_engine.py does not expose an analysis function.")
 
     try:
-        return analyzer(prompt, visual_component_strategy=visual_component_strategy)
+        return analyzer(prompt, visual_component_strategy=visual_component_strategy, industry_alignment=industry_alignment)
     except TypeError:
         return analyzer(prompt)
 
@@ -426,14 +440,15 @@ def analyze() -> str:
         return redirect(url_for("index"))
 
     try:
-        campaign_strategy = campaign_engine.build_campaign_strategy(form_data)
-        creative_strategy = creative_engine.build_creative_strategy(form_data, campaign_strategy)
-        design_strategy = design_engine.build_design_strategy(form_data, campaign_strategy, creative_strategy)
-        composition_strategy = asset_composer.build_asset_composition(form_data, campaign_strategy, creative_strategy, design_strategy)
-        visual_component_strategy = visual_components.build_visual_component_strategy(form_data, campaign_strategy, creative_strategy, design_strategy, composition_strategy)
-        prompt = _build_prompt(form_data, campaign_strategy, creative_strategy, design_strategy, composition_strategy, visual_component_strategy)
-        result = _run_analysis(prompt, visual_component_strategy)
-        asset = _create_visual_asset(str(result), form_data, campaign_strategy, creative_strategy, design_strategy, composition_strategy, visual_component_strategy)
+        industry_alignment = industry_engine.build_industry_alignment(form_data)
+        campaign_strategy = campaign_engine.build_campaign_strategy(form_data, industry_alignment)
+        creative_strategy = creative_engine.build_creative_strategy(form_data, campaign_strategy, industry_alignment)
+        design_strategy = design_engine.build_design_strategy(form_data, campaign_strategy, creative_strategy, industry_alignment)
+        composition_strategy = asset_composer.build_asset_composition(form_data, campaign_strategy, creative_strategy, design_strategy, industry_alignment)
+        visual_component_strategy = visual_components.build_visual_component_strategy(form_data, campaign_strategy, creative_strategy, design_strategy, composition_strategy, industry_alignment)
+        prompt = _build_prompt(form_data, campaign_strategy, creative_strategy, design_strategy, composition_strategy, visual_component_strategy, industry_alignment)
+        result = industry_engine.validate_semantic_alignment(_run_analysis(prompt, visual_component_strategy, industry_alignment), industry_alignment)
+        asset = _create_visual_asset(str(result), form_data, campaign_strategy, creative_strategy, design_strategy, composition_strategy, visual_component_strategy, industry_alignment)
     except RuntimeError as exc:
         LOGGER.warning("Application configuration error: %s", exc)
         flash(str(exc), "error")
@@ -444,7 +459,7 @@ def analyze() -> str:
         return redirect(url_for("index"))
 
     flash("Analysis completed successfully.", "success")
-    return render_template("result.html", result=result, form_data=form_data, asset=asset, campaign_strategy=campaign_strategy, creative_strategy=creative_strategy, design_strategy=design_strategy, composition_strategy=composition_strategy, visual_component_strategy=visual_component_strategy)
+    return render_template("result.html", result=result, form_data=form_data, asset=asset, industry_alignment=industry_alignment, campaign_strategy=campaign_strategy, creative_strategy=creative_strategy, design_strategy=design_strategy, composition_strategy=composition_strategy, visual_component_strategy=visual_component_strategy)
 
 
 @app.route("/generated/<path:filename>", methods=["GET"])
