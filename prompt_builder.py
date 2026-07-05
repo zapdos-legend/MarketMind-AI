@@ -8,6 +8,7 @@ import design_engine
 import asset_composer
 import visual_components
 import industry_engine
+import copy_engine
 
 
 SUPPORTED_CONTENT_TYPES = {
@@ -98,7 +99,7 @@ def _format_optional_details(form_data: dict[str, object]) -> str:
     return "\n".join(details)
 
 
-def build_prompt(form_data: dict, strategy: dict | None = None, creative_strategy: dict | None = None, design_strategy: dict | None = None, composition_strategy: dict | None = None, visual_component_strategy: dict | None = None, industry_alignment: dict | None = None) -> str:
+def build_prompt(form_data: dict, strategy: dict | None = None, creative_strategy: dict | None = None, design_strategy: dict | None = None, composition_strategy: dict | None = None, visual_component_strategy: dict | None = None, industry_alignment: dict | None = None, copy_strategy: dict | None = None) -> str:
     """Build a marketing content prompt from submitted form data and strategy."""
     if not isinstance(form_data, dict):
         form_data = {}
@@ -118,6 +119,8 @@ def build_prompt(form_data: dict, strategy: dict | None = None, creative_strateg
     composition_details = asset_composer.format_composition_for_prompt(composition)
     visual_components_strategy = visual_component_strategy or form_data.get("visual_component_strategy") or visual_components.build_visual_component_strategy(form_data, campaign_strategy, creative, design, composition, alignment)
     visual_component_details = visual_components.format_visual_components_for_prompt(visual_components_strategy)
+    copy = copy_strategy or form_data.get("copy_strategy") or copy_engine.generate_copy_strategy(form_data, campaign_strategy, creative, design, composition, visual_components_strategy, alignment)
+    copy_details = copy_engine.format_copy_for_prompt(copy)
     primary_instruction = CONTENT_TYPE_INSTRUCTIONS[content_type]
 
     sections = [
@@ -143,6 +146,16 @@ def build_prompt(form_data: dict, strategy: dict | None = None, creative_strateg
         "",
         "Visual component strategy (use this to choose visible creative blocks and richer industry-aware storytelling):",
         visual_component_details,
+        "",
+        "Marketing Copy Intelligence (high-priority final customer-facing copy direction):",
+        copy_details,
+        "",
+        "Copy usage rules:",
+        "- Use copy_strategy Primary Headline as the preferred headline unless the user explicitly overrides the headline.",
+        "- Use copy_strategy Subheadline, Benefit Bullets, Proof Points, Offer Line, Urgency Line, Primary CTA, Secondary CTA, and Trust Line as the finished copy source.",
+        "- Do not use additional notes/instructions as final headline, offer, CTA, or visible customer copy.",
+        "- Respect industry_alignment forbidden terms and copy_strategy forbidden copy warnings.",
+        "- Keep final copy natural, persuasive, audience-facing, and never debug-like.",
         "",
         "Primary task:",
         primary_instruction,
