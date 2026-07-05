@@ -39,6 +39,34 @@
         </article>
         {% endif %}
 
+
+        {% if copy_strategy %}
+        <article class="card border-0 shadow-sm mb-4 result-card">
+            <div class="card-header bg-warning text-dark py-3">
+                <h2 class="h4 mb-0">Marketing Copy Intelligence</h2>
+            </div>
+            <div class="card-body p-4 p-md-5">
+                <div class="row g-3">
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Copy Concept</p><p class="fw-semibold mb-0">{{ copy_strategy.copy_concept }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Copy Angle</p><p class="mb-0">{{ copy_strategy.copy_angle }}</p></div>
+                    <div class="col-12"><p class="text-uppercase text-muted small fw-semibold mb-1">Primary Headline</p><p class="fw-semibold mb-0">{{ copy_strategy.primary_headline }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-2">Alternate Headlines</p><ol class="mb-0">{% for item in copy_strategy.alternate_headlines %}<li>{{ item }}</li>{% endfor %}</ol></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Subheadline</p><p class="mb-0">{{ copy_strategy.subheadline }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-2">Benefit Bullets</p><ul class="mb-0">{% for item in copy_strategy.benefit_bullets %}<li>{{ item }}</li>{% endfor %}</ul></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-2">Proof Points</p><ul class="mb-0">{% for item in copy_strategy.proof_points %}<li>{{ item }}</li>{% endfor %}</ul></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Offer Line</p><p class="mb-0">{{ copy_strategy.offer_line }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Urgency Line</p><p class="mb-0">{{ copy_strategy.urgency_line }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Primary CTA</p><p class="mb-0">{{ copy_strategy.cta_primary }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Secondary CTA</p><p class="mb-0">{{ copy_strategy.cta_secondary }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Trust Line</p><p class="mb-0">{{ copy_strategy.trust_line }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-1">Emotional Trigger</p><p class="mb-0">{{ copy_strategy.emotional_trigger }}</p></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-2">Industry Copy Notes</p><ul class="mb-0">{% for item in copy_strategy.industry_copy_notes %}<li>{{ item }}</li>{% endfor %}</ul></div>
+                    <div class="col-md-6"><p class="text-uppercase text-muted small fw-semibold mb-2">Forbidden Copy Warnings</p>{% if copy_strategy.forbidden_copy_warnings %}<ul class="mb-0">{% for item in copy_strategy.forbidden_copy_warnings %}<li>{{ item }}</li>{% endfor %}</ul>{% else %}<p class="mb-0 text-muted">No forbidden copy terms detected.</p>{% endif %}</div>
+                </div>
+            </div>
+        </article>
+        {% endif %}
+
         {% if campaign_strategy %}
         <article class="card border-0 shadow-sm mb-4 result-card">
             <div class="card-header bg-dark text-white py-3">

@@ -156,6 +156,14 @@ def _fallback_context(prompt: str) -> dict[str, str]:
     }
 
 
+
+def _extract_copy_detail(prompt: str, label: str) -> str:
+    """Return a Marketing Copy Intelligence detail from the prompt."""
+    return _extract_strategy_detail(prompt, label)
+
+def _split_semicolon_list(value: str) -> list[str]:
+    return [item.strip() for item in value.split(";") if item.strip()]
+
 def _title_case_phrase(text: str) -> str:
     """Return compact title case without preserving noisy prompt verbs."""
     cleaned = re.sub(r"\b(promote|launch|create|advertise|announce)\b", "", text, flags=re.IGNORECASE)
@@ -274,7 +282,7 @@ def _visual_guidance(content_type: str) -> str:
     return "Organize the pamphlet into clear panels: cover, introduction, benefits, features, offer, CTA, and contact."
 
 
-def _local_fallback(prompt: str, reason: str | None = None, industry_alignment: dict | None = None) -> str:
+def _local_fallback(prompt: str, reason: str | None = None, industry_alignment: dict | None = None, copy_strategy: dict | None = None) -> str:
     """Build deterministic marketing content without weak prompt-rewriter copy."""
     content_type = _extract_content_type(prompt)
     context = _fallback_context(prompt)
@@ -317,15 +325,27 @@ def _local_fallback(prompt: str, reason: str | None = None, industry_alignment: 
             primary_hook = (offer or "FREE HEALTH CHECKUP").upper()
         if industry_alignment.get("detected_industry") == "real_estate" and not primary_hook:
             primary_hook = (offer or "EXCLUSIVE SITE VISIT THIS WEEKEND").upper()
-    headline = primary_hook or (headline_options[0] if headline_options else "") or (strategy_message.upper() if strategy_message else generate_headline(topic, brand, audience, offer))
-    if content_type == "Poster" and primary_hook:
-        headline = primary_hook
-    subheadline = (subheadline_options[0] if subheadline_options else "") or strategy_value or generate_subheadline(topic, brand, audience, offer)
-    cta = (cta_options[0] if cta_options else "") or strategy_cta or generate_cta(topic, offer, content_type)
-    benefits = (list(industry_alignment.get("recommended_benefits", []))[:3] if industry_alignment and industry_alignment.get("recommended_benefits") else generate_benefits(topic, audience))
+    if not copy_strategy:
+        copy_strategy = {
+            "primary_headline": _extract_copy_detail(prompt, "Primary Headline"),
+            "subheadline": _extract_copy_detail(prompt, "Subheadline"),
+            "cta_primary": _extract_copy_detail(prompt, "Primary CTA"),
+            "offer_line": _extract_copy_detail(prompt, "Offer Line"),
+            "trust_line": _extract_copy_detail(prompt, "Trust Line"),
+            "urgency_line": _extract_copy_detail(prompt, "Urgency Line"),
+            "benefit_bullets": _split_semicolon_list(_extract_copy_detail(prompt, "Benefit Bullets")),
+        }
+    headline = copy_strategy.get("primary_headline") or primary_hook or (headline_options[0] if headline_options else "") or (strategy_message.upper() if strategy_message else generate_headline(topic, brand, audience, offer))
+    if content_type == "Poster" and copy_strategy.get("primary_headline"):
+        headline = copy_strategy["primary_headline"]
+    subheadline = copy_strategy.get("subheadline") or (subheadline_options[0] if subheadline_options else "") or strategy_value or generate_subheadline(topic, brand, audience, offer)
+    cta = copy_strategy.get("cta_primary") or (cta_options[0] if cta_options else "") or strategy_cta or generate_cta(topic, offer, content_type)
+    benefits = (copy_strategy.get("benefit_bullets") or [])[:3] or (list(industry_alignment.get("recommended_benefits", []))[:3] if industry_alignment and industry_alignment.get("recommended_benefits") else generate_benefits(topic, audience))
     while len(benefits) < 3:
         benefits.append("Simple next step")
-    offer_copy = offer_framing or generate_offer_copy(topic, offer)
+    offer_copy = copy_strategy.get("offer_line") or offer_framing or generate_offer_copy(topic, offer)
+    trust_line = copy_strategy.get("trust_line") or ""
+    urgency_line = copy_strategy.get("urgency_line") or ""
     note = f"\n\nNote: Using local fallback because {reason}." if reason else ""
     tone_line = f"\nTone: {tone}" if tone else ""
     platform_line = f"\nPlatform: {platform}" if platform else ""
@@ -376,6 +396,8 @@ Benefits:
 - ✓ {benefits[2]}
 CTA: {cta}
 Offer: {offer_copy}
+Trust: {trust_line}
+Urgency: {urgency_line}
 
 Layout / Visual Direction
 {(visual_direction + " " + imagery_direction + " " + visual_structure + " " + asset_specific_notes).strip() or _visual_guidance(content_type)} Do not generate an actual image.{note}"""
@@ -545,7 +567,7 @@ def _call_openai(prompt: str, api_key: str) -> str:
     raise ValueError("OpenAI response did not include usable text")
 
 
-def analyze(prompt: str, visual_component_strategy: dict | None = None, industry_alignment: dict | None = None) -> str:
+def analyze(prompt: str, visual_component_strategy: dict | None = None, industry_alignment: dict | None = None, copy_strategy: dict | None = None) -> str:
     """Generate marketing content using OpenAI when available, otherwise locally.
 
     visual_component_strategy is accepted by the Phase 7 pipeline so callers can
@@ -553,17 +575,17 @@ def analyze(prompt: str, visual_component_strategy: dict | None = None, industry
     older routes. The prompt remains the primary source of generation context.
     """
     if not isinstance(prompt, str):
-        return _local_fallback(str(prompt), "the prompt was not provided as text", industry_alignment)
+        return _local_fallback(str(prompt), "the prompt was not provided as text", industry_alignment, copy_strategy)
 
     clean_prompt = prompt.strip()
     if not clean_prompt:
-        return _local_fallback("", "the prompt was empty", industry_alignment)
+        return _local_fallback("", "the prompt was empty", industry_alignment, copy_strategy)
 
     api_key = os.environ.get("OPENAI_API_KEY", "").strip()
     if not api_key:
-        return industry_engine.validate_semantic_alignment(_local_fallback(clean_prompt, industry_alignment=industry_alignment), industry_alignment)
+        return industry_engine.validate_semantic_alignment(_local_fallback(clean_prompt, industry_alignment=industry_alignment, copy_strategy=copy_strategy), industry_alignment)
 
     try:
         return _call_openai(clean_prompt, api_key)
     except (urllib.error.URLError, TimeoutError, ValueError, json.JSONDecodeError) as exc:
-        return industry_engine.validate_semantic_alignment(_local_fallback(clean_prompt, f"the OpenAI request could not be completed ({exc})", industry_alignment), industry_alignment)
+        return industry_engine.validate_semantic_alignment(_local_fallback(clean_prompt, f"the OpenAI request could not be completed ({exc})", industry_alignment, copy_strategy), industry_alignment)
